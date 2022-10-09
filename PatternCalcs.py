@@ -144,12 +144,6 @@ class IncOrDecPatternMeasure(PatternMeasure):
         if "increase_x_every_y" not in values_i_have:
             self._calc_increase_rate()
 
-    # def __str__(self):
-    #     return "A pattern measure for a simple increase or decrease: {0} to {1} over {2} rows".format(self.start_stitches().self.end_stitches(),self.n_rows())
-
-    # def __repr__(self):
-    #     return "IncOrDecMeasure({start_stitches={0},end_stitches={1},n_rows={2}})".format(self.start_stitches(),self.end_stitches(),self.n_rows())
-
 class PatternSection:
     """
     A class to write and store the directions for a section of a pattern. 
