@@ -120,13 +120,13 @@ class IncOrDecPatternMeasure(PatternMeasure):
     
     def increase_x_every_y(self,v=None):
         """
-        Convenience function to set and get end_stitches
+        Convenience function to set and get increase_x_every_y
         """
         return self.measure_values("increase_x_every_y",v)
 
     def n_rows(self,v=None):
         """
-        Convenience function to set and get end_stitches
+        Convenience function to set and get n_rows
         """
         return self.measure_values("n_rows",v)
         
@@ -144,11 +144,11 @@ class IncOrDecPatternMeasure(PatternMeasure):
         if "increase_x_every_y" not in values_i_have:
             self._calc_increase_rate()
 
-    def __str__(self):
-        return "A pattern measure for a simple increase or decrease: {0} to {1} over {2} rows".format(self.start_stitches().self.end_stitches(),self.n_rows())
+    # def __str__(self):
+    #     return "A pattern measure for a simple increase or decrease: {0} to {1} over {2} rows".format(self.start_stitches().self.end_stitches(),self.n_rows())
 
-    def __repr__(self):
-        return "IncOrDecMeasure({start_stitches={0},end_stitches={1},n_rows={2}})".format(self.start_stitches(),self.end_stitches(),self.n_rows())
+    # def __repr__(self):
+    #     return "IncOrDecMeasure({start_stitches={0},end_stitches={1},n_rows={2}})".format(self.start_stitches(),self.end_stitches(),self.n_rows())
 
 class PatternSection:
     """
@@ -252,12 +252,16 @@ class ToeUpToeML(PatternSection):
         self._directions.append(self.pattern_repeat())
         self._directions.append(self.how_to_end())
         self._directions.append("You will have knitted {0} rows.".format(self._measurements.n_rows()))
-
+    
     def __str__(self):
-        return "Toe for a toe-up sock using magic loop: {0}, to {1}.".format(self._measurements.start_stitches(),self._measurements.end_stitches()) 
-
+        start=self._measurements.start_stitches()
+        end=self._measurements.end_stitches()
+        return f"Toe for magic loop toe-up {start} stitches inc to {end} stitches."
+    
     def __repr__(self):
-        return "ToeUpToeML({\"start_stitches\":{},\"end_stitches\":{}})"
+        start=self._measurements.start_stitches()
+        end=self._measurements.end_stitches()
+        return f"ToeUpToeML({{'start_stitches':{start},'end_stitches':{end},'increase_x_every_y':(4,2)}})."
 
 class InstepML(PatternSection):
     """
@@ -288,11 +292,15 @@ class InstepML(PatternSection):
         self._directions.append(self.how_to_end())
     
     def __str__(self):
-        return "Instep: Just knit for {0} rows".format(self._measurements.n_rows())
+        start=self._measurements.start_stitches()
+        rows=self._measurements.n_rows()
+        return f"Generic instep for foot that is {start} stitches around and {rows} rows long."
     
     def __repr__(self):
-        return "InstepML({\"start_stitches\":{0},\"end_stitches\":{0},n_rows={1}}".format(self._measurements.start_stitches(),self._measurements.n_rows())
-
+        start=self._measurements.start_stitches()
+        end=self._measurements.n_rows()
+        return f"InstepML({{'start_stitches':{start},'n_rows':{end},'increase_x_every_y':(0,1)}})."
+    
 class ToeUpGuessetML(PatternSection):
     """
     A basic guesset section for a toe-up sock using magic loop
@@ -337,6 +345,16 @@ class ToeUpGuessetML(PatternSection):
         """
         self._directions.append(self.pattern_repeat())
         self._directions.append(self.how_to_end())
+    
+    def __str__(self):
+        start=self._measurements.start_stitches()
+        end=self._measurements.end_stitches()
+        return f"Gusset for magic loop toe-up {start} stitches inc to {end} stitches."
+    
+    def __repr__(self):
+        start=self._measurements.start_stitches()
+        end=self._measurements.end_stitches()
+        return f"GussetML({{'start_stitches':{start},'end_stitches':{end},'increase_x_every_y':(1,1)}})."
 
 class HeelTurnML(PatternSection):
     """
@@ -391,6 +409,16 @@ class HeelTurnML(PatternSection):
 
         self._directions.append("Continue until there are {0} stitches on the working needle.\n".format(self._measurements.end_stitches()))
         self._directions.append("Knit 1 row around.\n")
+    
+    def __str__(self):
+        start=self._measurements.start_stitches()
+        end=self._measurements.end_stitches()
+        return f"Heel turn for magic loop toe-up {start} stitches inc to {end} stitches."
+    
+    def __repr__(self):
+        start=self._measurements.start_stitches()
+        end=self._measurements.end_stitches()
+        return f"HeelTurnML({{'start_stitches':{start},'end_stitches':{end},'increase_x_every_y':(-1,1)}})."
 
 class BasicCuff(PatternSection):
     def __init__(self,measures_dict):
@@ -404,6 +432,22 @@ class BasicCuff(PatternSection):
         self._directions.append("Row 1: K1, P1 for all {0} around".format(self._measurements.measure_values("start_stitches")))
         self._directions.append("Repeat Row 1 for {0} rows.".format(self._measurements.measure_values("n_rows")))
         self._directions.append("Bind off LOOSELY (or you won't be able to get the sock onto your foot).")
+    
+    def __str__(self):
+        return "Cuff {0} stitches for {1} rows".format(self._measurements.start_stitches(),self._measurements.n_rows())
+    
+    def __repr__(self):
+        return "Cuff({'start_stitches':{0},'end_stitches':{0},n_rows: {1})".format(self._measurements.start_stitches(),self._measurements.n_rows())
+    
+    def __str__(self):
+        start=self._measurements.measure_values("start_stitches")
+        rows=self._measurements.measure_values("n_rows")
+        return f"Generic cuff for sock that is {start} stitches around and {rows} long."
+    
+    def __repr__(self):
+        start=self._measurements.measure_values("start_stitches")
+        rows=self._measurements.measure_values("n_rows")
+        return f"BasicCuff({{'start_stitches':{start},'n_rows':{rows},'increase_x_every_y':(0,1)}})."
 
 def main():
     print("Basic Sock Elements")
@@ -425,7 +469,6 @@ def main():
 
     #Print directions to screen
     print("Made: "+toe.__str__())
-    print(toe.__repr__())
     print("----Pattern Directions------")
     print("\n"+toe.label())
     toe.print_directions()
@@ -437,5 +480,19 @@ def main():
     turn.print_directions()
     print("\n"+cuff.label())
     cuff.print_directions()
+
+    # print("Objects Created")
+    # print(toe.__str__())
+    # print(toe.__repr__())
+    # print(instep.__str__())
+    # print(instep.__repr__())
+    # print(gusset.__str__())
+    # print(gusset.__repr__())
+    # print(turn.__str__())
+    # print(turn.__repr__())
+    # print(cuff.__str__())
+    # print(cuff.__repr__())
+
+
 
 if __name__=="__main__": main()
