@@ -5,8 +5,8 @@ class PatternMeasure:
     A base class for classes that can calculate some measurements from others.
     This allows us to abstract out the checks for whether we have the right measurements for a calculation.
     Class attributes
-     _vital_measures: a set of strings that have labels for must-have measurements. If any of these are missing, the object does not have enough information to be created
-     _all_measures: a set of strings that is the complete set of measurements needed for the pattern section including vital measures and measures that can be calculated 
+     _vital_measures: a set of strings that have labels for must-have measurements. If any of these are missing, the object does not have enough information to be created.
+     _all_measures: a set of strings that is the complete set of measurements needed for the pattern section including vital measures and measures that can be calculated.
      _measure_values: a dictionary of measurements with strings as keys and integers as values. Measurements may be in rows, stritches, inches or centimeters.
     """
     def __init__(self,vital_measures,all_measures,measures_dict,*args,**kwargs):
@@ -20,7 +20,7 @@ class PatternMeasure:
             self.measure_values(k,v)
         #Raise an error if we are missing key metrics on initialization
         if self._vital_measures is not None and not self.have_what_i_need(self._vital_measures):
-            raise ValueError(f"We needed:{self._vital_measures}.")
+            raise ValueError(f"We needed: {self._vital_measures}.")
 
     def measure_values(self,key,value=None):
         """
@@ -152,18 +152,20 @@ class IncOrDecPatternMeasure(PatternMeasure):
 
 class PatternSection:
     """
-    A class to hold the vital statistics for a section of a pattern. 
+    A class to write and store the directions for a section of a pattern. 
     Attributes: 
     _label (str) Label used when writing pattern directions
-    _measurements (dict): a PatternMeasure object that holds measurements for section
+    _measurements (PatternMeasure): object that holds measurements for section
     _directions (list): Directions for the pattern section in proper order. 
     """
 
     def __init__(self,vital_measures,all_measures,measures_dict,*args,**kwargs):
         """
         Initialize PatternMeasure and set label for Pattern Section
+        vital_measures (list of str): Measurements that must be input by the calling function
+        all_measures (list of str): All the measurements needed for the section, including those that are calculated
+        measures_dict (dict str:int): A dictionary holding input measurements
         """
-        values_i_have=measures_dict.keys()
         self._directions=[]
         if "label" in kwargs.keys():
             self.label(kwargs["label"])
@@ -172,6 +174,7 @@ class PatternSection:
         self.make_measure(vital_measures,all_measures,measures_dict)
 
     def label(self,text=None):
+        "Set or get the label for this section"
         if text:
             self._label=str(text)
         return self._label
@@ -213,7 +216,7 @@ class ToeUpToeML(PatternSection):
         self.label("Toe")
     
     #TODO: We know increase_x_every_y for a toe, so check the input dictionary
-    #Add increase_x_every_y=(4,2) and make sure the start and end make sense
+    #Add increase_x_every_y=(4,2) and make sure you're adding a multiple of 4
     def make_measure(self,vital_measures,all_measures,measures_dict):
         """
         This is a standard increase from start_stitches to end_stitches
