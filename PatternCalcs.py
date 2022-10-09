@@ -327,7 +327,7 @@ class ToeUpGuessetML(PatternSection):
         """
         Increase at either side of Needle 2 every other row.
         """
-        return f"Row 1: Needle 1: Knit all stitches across. Needle 2:K1, M1R, Knit across to last stitche. M1L K1.\nRow 2: Knit all stitches around.\n"
+        return f"Row 1: Needle 1: Knit all stitches across. Needle 2: K1, M1R, Knit across to last stitche. M1L K1.\nRow 2: Knit all stitches around.\n"
 
     def how_to_end(self):
         """
@@ -354,7 +354,7 @@ class ToeUpGuessetML(PatternSection):
     def __repr__(self):
         start=self._measurements.start_stitches()
         end=self._measurements.end_stitches()
-        return f"GussetML({{'start_stitches':{start},'end_stitches':{end},'increase_x_every_y':(1,1)}})."
+        return f"ToeUpGussetML({{'start_stitches':{start},'end_stitches':{end},'increase_x_every_y':(1,1)}})."
 
 class HeelTurnML(PatternSection):
     """
@@ -396,7 +396,7 @@ class HeelTurnML(PatternSection):
             self._calc_second_turn()
     
     def write_directions(self):
-        self._directions.append("Knit across needle 1. Leave all gusset stitches on the cable and work back and forth on the gusset stitches like so:\n")
+        self._directions.append("Knit across needle 1. Leave all top-of-foot stitches on the cable and work back and forth on the gusset stitches as follows:\n")
         row=1
         self._directions.append("Row {0}: Knit {1} ssk k1,turn.".format(row,self._measurements.measure_values("end_stitches")-1))
         start=self._measurements.measure_values("second_turn")
@@ -460,39 +460,13 @@ def main():
     cuff=BasicCuff({"start_stitches":64,"n_rows":12})
 
     #Each object makes its calculations on create. 
-    #Now have them write their directions.
-    toe.write_directions()
-    instep.write_directions()
-    gusset.write_directions()
-    turn.write_directions()
-    cuff.write_directions()
-
-    #Print directions to screen
-    print("Made: "+toe.__str__())
-    print("----Pattern Directions------")
-    print("\n"+toe.label())
-    toe.print_directions()
-    print("\n"+instep.label()+"\n")
-    instep.print_directions()
-    print("\n"+gusset.label()+"\n")
-    gusset.print_directions()
-    print("\n"+turn.label())
-    turn.print_directions()
-    print("\n"+cuff.label())
-    cuff.print_directions()
-
-    # print("Objects Created")
-    # print(toe.__str__())
-    # print(toe.__repr__())
-    # print(instep.__str__())
-    # print(instep.__repr__())
-    # print(gusset.__str__())
-    # print(gusset.__repr__())
-    # print(turn.__str__())
-    # print(turn.__repr__())
-    # print(cuff.__str__())
-    # print(cuff.__repr__())
-
-
+    pattern_list=[toe,instep,gusset,turn,cuff]
+    # #Print directions to screen
+    print("\n----Pattern Directions------")
+    for s in pattern_list:
+    #A PatternSection only writes its directions when prompted
+        s.write_directions()
+        print("\n"+s.label())
+        s.print_directions()
 
 if __name__=="__main__": main()
