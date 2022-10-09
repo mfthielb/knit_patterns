@@ -14,9 +14,9 @@ One of my personal favorite garments to knit is socks. The example classes are i
 # How to Read the Code
 Start with the main() function in PatternCalcs.py. This has an example of building a sock pattern when you know how many rows and stitches you need for each section. Running PatternCalcs.py as a script will print out a toe-up magic loop sock pattern. If you've never knitted a sock before, review the "Basic Steps for Toe-Up Socks" section of this readme.
 
-In the finished product, there would be a Pattern class (not implemented) that does the work that is done in main() for this example, i.e. it would:
+In the finished product, there would be a Pattern class (not implemented) that does the work that is done in main() for this example, it would:
 1. Take in foot measurements in inches or cm.
-1. Calculate required measurements in stitches and rows for each section. 
+1. Calculate required pattern measurements in stitches and rows for each section. 
 1. Generate the appropriate PatternSection objects for each section.
 1. Write out pattern directions to a file or screen. 
 
@@ -25,8 +25,10 @@ In the example, numbers of stitches and numbers of rows are hard-coded.
 # Class Design
 There are two implemented base classes: PatternMeasure and PatternSection.
 
-## PatternMeausure
+## PatternMeausure (abstract class)
 Does all the calculations, in stitches and rows, for a PatternSection. 
+
+The IncOrDecPatternMeasure is a good workhorse for socks and sweaters. It has the needed calculations for a straight up increase/decrease.    
 
 ## PatternSection
 Owns a PatternMeasure and writes instructions for how to knit a section of a pattern. 
@@ -35,18 +37,18 @@ Owns a PatternMeasure and writes instructions for how to knit a section of a pat
 Takes in measurements for the garment (in inches or cm) and converts those measurements to stitches and rows.  
 
 ## Pattern (Not Implemented)
-Knows measurements for the garment, pattern facts such as recommended yarn and the knitter's guage, which PatternSections are needed for this pattern, and the order in which the PatternSections are done. 
+Knows measurements for the garment, pattern facts such as recommended yarn and the knitter's guage.
+Owns a PatternCalculator that calculates stitches and rows for each section.
+Builds a series of PatternSections this pattern, and keeps track of the order in which the PatternSections are done. 
 
-The IncOrDecPatternMeasure is a good workhorse for socks and sweaters.    
-
-## If you've never knitted a sock before: 
-* Socks are knit "in the round," meaning that the knitter knits in a joined circle. 
+# If you've never knitted a sock before: 
+* Socks are knit "in the round," meaning that the knitter knits in a joined circle. You either start with the cuff, knitting a cylinder or start with the toe, knitting a cone. 
 * Toe-up meaans that the knitter knits starting with a cone for the toe. 
-* Magic loop means that there are two needles joined with a string/cable. The knitter is able to knit in a circle by moving stitches in around on the two needles. 
+* Magic loop means the knitter knits with two needles that are joined with a string/cable. The knitter is able to knit in a circle by moving stitches around on the two needles, looping over and over. 
 
 # Basic Steps for Toe-Up Socks:
 1. Toe: Knit a cone for the toe.
 1. Instep: Knit a cylinder for the instep.
 1. Gusset: Continue knitting a cylinder, but add two stitches to the botton of the sock on every other row. This creates a "triangle" on each side of the foot that extends from the sole to the ankle. 
-1. Heel: Stop knitting on the top of the foot and knit back and forth across the botton, reducing by one stitch on each row. This builds the sock up the back of the foot (along the achillies tendon).
+1. Heel: Stop knitting on the top of the foot and knit back and forth across the botton, reducing by one stitch on each row. This builds the sock up the back of the foot (along the achillies tendon). When finished, the sock has a "cup" around the back of the foot, and you are ready to knit around the let. 
 1. Cuff: Finish the sock by knitting ribbing around the top for a few rows. This makes the top of the sock "stretchy" so it's easy to put on and stayes in place. 
