@@ -1,17 +1,18 @@
 import sys
 sys.path.append("..")
-from PatternCalcs import PatternMeasure, PatternMeasure as pm
+from PatternCalcs import PatternMeasure
 import unittest
 
 class TestPatternMeasure(unittest.TestCase):
     def test_minimal_arg(self):
         """
-        Make sure pattern measure raises errors when not given vital measures or 
+        Make sure pattern measure raises errors when not given vital measures or a dictionarr 
         """
-        m=PatternMeasure(None,None,None)
-        self.assertEqual(m.vital_measures(),set())
-        self.assertEqual(m.all_measures(),set())
-        self.assertEqual(m.what_do_i_have(),set())
+        with self.assertRaises(Warning):
+            m=PatternMeasure(None,None,None)
+            self.assertEqual(m.vital_measures(),set())
+            self.assertEqual(m.all_measures(),set())
+            self.assertEqual(m.what_do_i_have(),set())
 
     def test_measure_dict_only(self):
         m=PatternMeasure(None,None,{"start_stitches":1,"end_stitches":11})

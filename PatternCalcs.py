@@ -14,7 +14,7 @@ class PatternMeasure:
         Fill _measure_values dictionary and make sure we have all the measurements the user told us we needed.
         """
         if all_measures is not None:
-            self.all_measures()
+            self.all_measures(all_measures)
         else:
             self._all_measures=set()
         self._measure_values={}
@@ -27,8 +27,13 @@ class PatternMeasure:
         else:
             self.vital_measures(set())
         self.label(label)
+        self.check_myself()
+
+    def check_myself(self):
         if not self.have_what_i_need(self.vital_measures()):
             raise Warning("Measure initialized without all vital measures set. Missing: {0}".format(self.vital_measures()-self.what_do_i_have()))
+        if self.vital_measures()==set() and self.what_do_i_have()==set():
+            raise Warning("Empty pattern measure. No vital measures set and measure dictionary empty.")
 
     def label(self,v=None):
         """
@@ -98,10 +103,7 @@ class PatternMeasure:
             if isinstance(v,str):
                 self._all_measures=set([v])
             else:
-                for i in v:
-                    if not isinstance(v,str):
-                        raise TypeError(f"Value {i} is not a string. It cannot be a measure name.")
-                    self._all_measures.add(v)
+                self._all_measures=set(v)
         return self._all_measures
 
     def measure_values(self,key,value=None):
@@ -112,8 +114,9 @@ class PatternMeasure:
         """
         if not isinstance(key,str):
             raise ValueError("Measure labels must be strings.")
-        self._measure_values[key]=value
-        self.edit_measures(va=key)
+        if value is not None:
+            self._measure_values[key]=value
+            self.edit_measures(va=key)
         if key in self._measure_values.keys():
             return self._measure_values[key]
         else:
@@ -142,7 +145,7 @@ class IncOrDecPatternMeasure(PatternMeasure):
     """
     This class is a pattern measure for a constant increases/decrease over a set number of rows (increase_x_by_y)
     Attributes: 
-    _measurements: dictionary
+    _measure_values: dictionary
     _vital_measures: ["start_stitches"] (constant)
     _all_measures: ["start_stitches","end_stitches","increase_x_every_y","n_rows"]
     """
