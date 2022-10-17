@@ -151,7 +151,7 @@ class IncOrDecPatternMeasure(PatternMeasure):
     _vital_measures: ["start_stitches"] (constant)
     _all_measures: ["start_stitches","end_stitches","increase_x_every_y","n_rows"]
     """
-    def __init__(self,vital_measures,all_measures,measures_dict):
+    def __init__(self,measures_dict):
         """
         We must have 3 of the 4 
         """
@@ -317,7 +317,7 @@ class ToeUpToeML(PatternSection):
         if inc is None:
             if (measures_dict["start_stitches"]-measures_dict["end_stitches"])%4==0:
                 measures_dict["increase_x_every_y"]=(4,2)
-        self._measurements=IncOrDecPatternMeasure(None,None,measures_dict)
+        self._measurements=IncOrDecPatternMeasure(measures_dict)
 
     def how_to_cast_on(self):
         """
@@ -374,7 +374,7 @@ class InstepML(PatternSection):
         Use an IncOrDecPatternMeasure with a 0 increase.
         """
         #TODO: Check the input measures_dict and make sure we have the right numbers
-        self._measurements=IncOrDecPatternMeasure(None,None,measures_dict)
+        self._measurements=IncOrDecPatternMeasure(measures_dict)
 
     def how_to_end(self):
         """
@@ -419,7 +419,7 @@ class ToeUpGuessetML(PatternSection):
         measures_dict: dictionary with start_stitches, end_stitches and either n_rows or increase_x_every_y
         """
         #TODO: Check Measures dictionary
-        self._measurements=IncOrDecPatternMeasure(None,None,measures_dict)
+        self._measurements=IncOrDecPatternMeasure(measures_dict)
 
     def pattern_repeat(self):
         """
@@ -470,7 +470,7 @@ class HeelTurnML(PatternSection):
         self.fill_in_missing_measures()
 
     def make_measure(self,vital_measures,all_measures,measures_dict):
-        self._measurements=IncOrDecPatternMeasure(vital_measures,all_measures,measures_dict)
+        self._measurements=IncOrDecPatternMeasure(measures_dict)
 
     def _calc_first_turn(self):
         if not self._measurements.have_what_i_need(["start_stitches"]):
