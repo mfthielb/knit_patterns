@@ -1,5 +1,7 @@
 from abc import abstractclassmethod
-
+"""
+Basic classes for PatternMeasure's and PatternSections
+"""
 class PatternMeasure:
     """
     A base class for classes that can calculate some measurements from others.
@@ -248,7 +250,7 @@ class PatternSection:
     _directions (list): Directions for the pattern section in proper order. 
     """
 
-    def __init__(self,vital_measures,all_measures,measures_dict,*args,**kwargs):
+    def __init__(self,vital_measures,all_measures,measures_dict,*args,label="",**kwargs):
         """
         Initialize PatternMeasure and set label for Pattern Section
         vital_measures (list of str): Measurements that must be input by the calling function
@@ -256,10 +258,7 @@ class PatternSection:
         measures_dict (dict str:int): A dictionary holding input measurements
         """
         self._directions=[]
-        if "label" in kwargs.keys():
-            self.label(kwargs["label"])
-        else:
-            self.label("Generic Pattern Section")
+        self._label=label
         self.make_measure(vital_measures,all_measures,measures_dict)
 
     def label(self,text=None):
@@ -300,16 +299,24 @@ class ToeUpToeML(PatternSection):
     """
     A Toe section for a basic toe-up sock using magic loop
     """
-    def __init__(self,measures_dict):
-        super().__init__(None,None,measures_dict)
-        self.label("Toe")
+    def __init__(self,measures_dict,label=""):
+        super().__init__(None,None,measures_dict,label=label)
+        if len(label)==0:
+            self.label("Toe")
     
     #TODO: We know increase_x_every_y for a toe, so check the input dictionary
     #Add increase_x_every_y=(4,2) and make sure you're adding a multiple of 4
     def make_measure(self,vital_measures,all_measures,measures_dict):
         """
-        This is a standard increase from start_stitches to end_stitches
+        Toes are usually increase 4 every 2 rows. Use defaults if missiing some measures. start_stitches to end_stitches. 
         """
+        start_stitches=measures_dict.get("start_stitches")
+        if start_stitches is None:
+            raise ValueError("Toe measures dict has only: {0}. Need start_stitches to calculate toe.".format(measures_dict.keys()))
+        inc=measures_dict.get("increase_x_every_y")
+        if inc is None:
+            if (measures_dict["start_stitches"]-measures_dict["end_stitches"])%4==0:
+                measures_dict["increase_x_every_y"]=(4,2)
         self._measurements=IncOrDecPatternMeasure(None,None,measures_dict)
 
     def how_to_cast_on(self):
@@ -318,7 +325,9 @@ class ToeUpToeML(PatternSection):
         n_start: Number of starting stitches.
         """
         n_start=self._measurements.start_stitches()
-        half_of_n_start=n_start/2
+        if n_start%2:
+            raise Warning("Starting stitches is an odd number. Adding 1 stitch.")
+        half_of_n_start=int(round(n_start/2))
         return f"Cast on {n_start} ({half_of_n_start} per needle) in preferred style (Figure 8, crocet, etc).\nKnit all stitches around."
     
     def how_to_end(self):

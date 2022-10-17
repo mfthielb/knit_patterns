@@ -32,7 +32,11 @@ class TestIncOrDecMeasure(unittest.TestCase):
 
     def test_calc_n_rows(self):
         toe=IncOrDecPatternMeasure(None,None,{"start_stitches":12,"end_stitches":32,"increase_x_every_y":(2,1)})
-        self.assertEqual(toe.n_rows(),10)        
+        self.assertEqual(toe.n_rows(),10)
+
+    def test_calc_end_stitches(self):
+        toe=IncOrDecPatternMeasure(None,None,{"start_stitches":12,"n_rows":10,"increase_x_every_y":(2,1)})
+        self.assertEqual(toe.end_stitches(),32)        
 
 if __name__=="__main__": 
     unittest.main()
