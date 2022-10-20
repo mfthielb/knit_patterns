@@ -1,5 +1,7 @@
 from abc import abstractclassmethod
-
+"""
+Basic classes for PatternMeasure's and PatternSections
+"""
 class PatternMeasure:
     """
     A base class for classes that can calculate some measurements from others.
@@ -9,18 +11,102 @@ class PatternMeasure:
      _all_measures: a set of strings that is the complete set of measurements needed for the pattern section including vital measures and measures that can be calculated.
      _measure_values: a dictionary of measurements with strings as keys and integers as values. Measurements may be in rows, stritches, inches or centimeters.
     """
-    def __init__(self,vital_measures,all_measures,measures_dict,*args,**kwargs):
+    def __init__(self,vital_measures,all_measures,measures_dict,*args,label="",**kwargs):
         """
         Fill _measure_values dictionary and make sure we have all the measurements the user told us we needed.
         """
-        self._vital_measures=set(vital_measures)
-        self._all_measures=self._vital_measures.union(all_measures)
+        if all_measures is not None:
+            self.all_measures(all_measures)
+        else:
+            self._all_measures=set()
         self._measure_values={}
-        for k,v in measures_dict.items():
-            self.measure_values(k,v)
-        #Raise an error if we are missing key metrics on initialization
-        if self._vital_measures is not None and not self.have_what_i_need(self._vital_measures):
-            raise ValueError(f"We needed: {self._vital_measures}.")
+        if measures_dict is not None:
+            for k,v in measures_dict.items():
+                self.measure_values(k,v)
+        if vital_measures is not None:
+            self.vital_measures(vital_measures)
+            self.edit_measures(va=self.vital_measures())
+        else:
+            self.vital_measures(set())
+        self.label(label)
+        self.check_myself()
+
+    def check_myself(self):
+        if not self.have_what_i_need(self.vital_measures()):
+            raise Warning("Measure initialized without all vital measures set. Missing: {0}".format(self.vital_measures()-self.what_do_i_have()))
+        if self.vital_measures()==set() and self.what_do_i_have()==set():
+            raise Warning("Empty pattern measure. No vital measures set and measure dictionary empty.")
+
+    def label(self,v=None):
+        """
+        Get or Set measure label.
+        """
+        if v is not None:
+            if not isinstance(v,str):
+                raise TypeError("Label must be a str. Value entered was a {0}.".format(type(v)))
+            else:
+                self._label=v
+        return self._label
+
+    def edit_measures(self,va=set(),vrm=set()):
+        """
+        Add/remove a single string or an iterable that can be made into a set to/from _all_measures
+        """
+        if isinstance(va,str):
+            self.all_measures(self.all_measures().add(va))
+        else:
+            for i in va:
+                if not isinstance(i,str):
+                    raise TypeError(f"Value {i} is not a string. Cannot be a measure name.")
+                self.all_measures(self.all_measures().add(i))
+        if isinstance(vrm,str):
+            self.all_measures(self.all_measures().remove(vrm))
+        else:
+            for i in vrm:
+                if not isinstance(i,str):
+                    raise TypeError(f"Value {i} is not a string. Cannot be a measure name.")
+                self.all_measures(self.all_measures().remove(i))
+    
+    def edit_vital_measures(self,va=set(),vrm=set()):
+        """
+        Add/remove a single string or an iterable that can be made into a set to/from _vital_measures
+        """
+        if isinstance(va,str):
+            self.vital_measures(self.vital_measures().add(va))
+        else:
+            for i in set(va):
+                if not isinstance(i,str):
+                    raise ValueError(f"Value {i} is not a string. Cannot be a measure name.")
+                self.vital_measures(self.vital_measures().add(i))
+                self.all_measures(self.all_measures().add(i))
+        if isinstance(vrm,str):
+            self.vital_measures(self.vital_measures().remove(vrm))
+        else:
+            for i in set(vrm):
+                if not isinstance(i,str):
+                    raise TypeError(f"Value {i} is not a string. Cannot be a measure name.")
+                self.vital_measures(self.vital_measures().remove(i))
+
+    def vital_measures(self,v=None):
+        if v is not None:
+            if isinstance(v,str):
+                self._vital_measures=set([v])
+            else:
+                self._vital_measures=set(v)
+            if not self.have_what_i_need(self.what_do_i_have()):
+                raise Warning("Vital measures has been edited, but measures are missing. Need to add: {}".format(self.vital_measures()-self.what_do_i_have()))
+        return self._vital_measures
+    
+    def all_measures(self,v=None):
+        """
+        Setter and getter for all_measures 
+        """
+        if v is not None:
+            if isinstance(v,str):
+                self._all_measures=set([v])
+            else:
+                self._all_measures=set(v)
+        return self._all_measures
 
     def measure_values(self,key,value=None):
         """
@@ -30,8 +116,9 @@ class PatternMeasure:
         """
         if not isinstance(key,str):
             raise ValueError("Measure labels must be strings.")
-        if value:
+        if value is not None:
             self._measure_values[key]=value
+            self.edit_measures(va=key)
         if key in self._measure_values.keys():
             return self._measure_values[key]
         else:
@@ -44,23 +131,27 @@ class PatternMeasure:
         """
         if values_i_have is None:
             values_i_have=self.what_do_i_have()
+        elif values_i_need==set():
+            return True
+        if values_i_need is None:
+            values_i_need=self.vital_measures()
         return all([k in values_i_have for k in values_i_need])
 
     def what_do_i_have(self):
         """
-        Get a list of strings for measurements that are entered in _measure_vlaues
+        Get a list of strings for measurements that are entered in _measure_values
         """
-        return self._measure_values.keys()
+        return set(self._measure_values.keys())
     
 class IncOrDecPatternMeasure(PatternMeasure):
     """
     This class is a pattern measure for a constant increases/decrease over a set number of rows (increase_x_by_y)
     Attributes: 
-    _measurements: dictionary
+    _measure_values: dictionary
     _vital_measures: ["start_stitches"] (constant)
     _all_measures: ["start_stitches","end_stitches","increase_x_every_y","n_rows"]
     """
-    def __init__(self,vital_measures,all_measures,measures_dict):
+    def __init__(self,measures_dict):
         """
         We must have 3 of the 4 
         """
@@ -69,27 +160,25 @@ class IncOrDecPatternMeasure(PatternMeasure):
 
     def _calc_n_rows(self):
         """
-        If we have min and max stitches and its straight-up increase/decrease, calc number of rows
+        If we have min and max stitches and it's straight-up increase/decrease, calc number of rows
         """
         #TODO: Make sure there's no remainer when we divide
-        need_list=["start_stitches","end_stitches","increase_x_every_y"]
-        if self.have_what_i_need(need_list):
-            increase_rate=self.measure_values("increase_x_every_y")
-            increase_per_row=increase_rate[0]/increase_rate[1]
-            n_to_increase=self.measure_values("end_stitches")-self.measure_values("start_stitches")
-            self.measure_values("n_rows",n_to_increase/increase_per_row)
-            return None
-        else:
-            raise ValueError("Trying to calculate number of rows in increase but missing one of these: {0}".format(need_list))
+        need_list=set(["start_stitches","end_stitches","increase_x_every_y"])
+        if not self.have_what_i_need(need_list):
+            raise ValueError("Trying to calculate number of rows in increase but missing: {0}".format(need_list-self.what_do_i_have()))
+        increase_rate=self.measure_values("increase_x_every_y")
+        increase_per_row=increase_rate[0]/increase_rate[1]
+        n_to_increase=self.measure_values("end_stitches")-self.measure_values("start_stitches")
+        self.measure_values("n_rows",n_to_increase/increase_per_row)
         
     def _calc_end_stitches(self):
         """"
         If we have increases/decreases but not the number we need at the end, calculate end_stitches (number of stitches per row at end of section"
         """
         need_list=["increase_x_every_y","n_rows","start_stitches"]
-        if self.have_what_i_need(need_list):
+        if not self.have_what_i_need(need_list):
             #raise a value error and return
-            raise ValueError("Trying to calculate number of stitches at the end but missing one of: {0}, We have: {1}".format(need_list,self.what_do_i_have()))
+            raise ValueError("Trying to calculate number of stitches at the end but missing: {0}".format(need_list-self.what_do_i_have()))
         increase_rate=self.measure_values("increase_x_every_y")
         increase_per_row=increase_rate[0]/increase_rate[1]
         start=self.measure_values("start_stitches")
@@ -102,7 +191,7 @@ class IncOrDecPatternMeasure(PatternMeasure):
         """
         need_list=["start_stitches","end_stitches","n_rows"]
         if not self.have_what_i_need(need_list):
-            raise ValueError("We need :{0}. We only have:{1}.".format(need_list,self.what_do_i_have()))
+            raise ValueError("Cannot calculate increase rate. Missing:{0}.".format(need_list-self.what_do_i_have()))
         x=(self.end_stitches()-self.start_stitches())/self.n_rows()
         self.increase_x_every_y((x,1))
             
@@ -110,25 +199,33 @@ class IncOrDecPatternMeasure(PatternMeasure):
         """
         Convenience function to set and get start_stitches
         """
-        return self.measure_values("start_stitches",v)
-    
+        if v is not None:
+            self.measure_values("start_stitches",v)
+        return self.measure_values("start_stitches")
+
     def end_stitches(self,v=None):
         """
         Convenience function to set and get end_stitches
         """
-        return self.measure_values("end_stitches",v)
+        if v is not None:
+            self.measure_values("end_stitches",v)
+        return self.measure_values("end_stitches")
     
     def increase_x_every_y(self,v=None):
         """
         Convenience function to set and get increase_x_every_y
         """
-        return self.measure_values("increase_x_every_y",v)
+        if v is not None:
+            self.measure_values("increase_x_every_y",v)
+        return self.measure_values("increase_x_every_y")
 
     def n_rows(self,v=None):
         """
         Convenience function to set and get n_rows
         """
-        return self.measure_values("n_rows",v)
+        if v is not None:
+            self.measure_values("n_rows",v)
+        return self.measure_values("n_rows")
         
     def fill_in_missing_measures(self):
         """
@@ -153,7 +250,7 @@ class PatternSection:
     _directions (list): Directions for the pattern section in proper order. 
     """
 
-    def __init__(self,vital_measures,all_measures,measures_dict,*args,**kwargs):
+    def __init__(self,vital_measures,all_measures,measures_dict,*args,label="",**kwargs):
         """
         Initialize PatternMeasure and set label for Pattern Section
         vital_measures (list of str): Measurements that must be input by the calling function
@@ -161,15 +258,12 @@ class PatternSection:
         measures_dict (dict str:int): A dictionary holding input measurements
         """
         self._directions=[]
-        if "label" in kwargs.keys():
-            self.label(kwargs["label"])
-        else:
-            self.label("Generic Pattern Section")
+        self._label=label
         self.make_measure(vital_measures,all_measures,measures_dict)
 
     def label(self,text=None):
         "Set or get the label for this section"
-        if text:
+        if text is not None:
             self._label=str(text)
         return self._label
 
@@ -205,31 +299,39 @@ class ToeUpToeML(PatternSection):
     """
     A Toe section for a basic toe-up sock using magic loop
     """
-    def __init__(self,measures_dict):
-        super().__init__(None,None,measures_dict)
-        self.label("Toe")
+    def __init__(self,measures_dict,label=""):
+        super().__init__(None,None,measures_dict,label=label)
+        if len(self.label())==0:
+            self.label("Toe")
     
     #TODO: We know increase_x_every_y for a toe, so check the input dictionary
     #Add increase_x_every_y=(4,2) and make sure you're adding a multiple of 4
     def make_measure(self,vital_measures,all_measures,measures_dict):
         """
-        This is a standard increase from start_stitches to end_stitches
+        Toes are usually increase 4 every 2 rows. Use defaults if missiing some measures. start_stitches to end_stitches. 
         """
-        self._measurements=IncOrDecPatternMeasure(None,None,measures_dict)
+        start_stitches=measures_dict.get("start_stitches")
+        if start_stitches is None:
+            raise ValueError("Toe measures dict has only: {0}. Need start_stitches to calculate toe.".format(measures_dict.keys()))
+        inc=measures_dict.get("increase_x_every_y")
+        if inc is None:
+            if (measures_dict["start_stitches"]-measures_dict["end_stitches"])%4==0:
+                measures_dict["increase_x_every_y"]=(4,2)
+        self._measurements=IncOrDecPatternMeasure(measures_dict)
 
     def how_to_cast_on(self):
         """
         Instructions for starting. This is a toe-up sock, so the toe starts with cast-on instructions.
-        n_start: Number of starting stitches.
         """
         n_start=self._measurements.start_stitches()
-        half_of_n_start=n_start/2
+        if n_start%2:
+            raise Warning("Starting stitches is an odd number. Adding 1 stitch.")
+        half_of_n_start=int(round(n_start/2))
         return f"Cast on {n_start} ({half_of_n_start} per needle) in preferred style (Figure 8, crocet, etc).\nKnit all stitches around."
     
     def how_to_end(self):
         """
         Instructions for the end with number of stitches you should have.
-        n_end: Number of stitches you have at the end
         """
         n_end=self._measurements.end_stitches()
         per_needle=n_end/2
@@ -259,18 +361,19 @@ class ToeUpToeML(PatternSection):
 
 class InstepML(PatternSection):
     """
-    Directions for the instep of a toe-up sock
+    Directions for the instep of a sock. Toe up or cuff down, the directions are the same
     """
     def __init__(self,measures_dict):
         super().__init__(None,None,measures_dict)
-        self.label("Instep")
+        if len(self.label())==0:
+            self.label("Instep")
 
     def make_measure(self,vital_measures,all_measures,measures_dict):
         """
         Use an IncOrDecPatternMeasure with a 0 increase.
         """
         #TODO: Check the input measures_dict and make sure we have the right numbers
-        self._measurements=IncOrDecPatternMeasure(None,None,measures_dict)
+        self._measurements=IncOrDecPatternMeasure(measures_dict)
 
     def how_to_end(self):
         """
@@ -304,7 +407,8 @@ class ToeUpGuessetML(PatternSection):
     """
     def __init__(self,measures_dict):
         super().__init__(None,None,measures_dict)
-        self.label("Gusset")
+        if len(self.label())==0:
+            self.label("Gusset")
         self.make_measure(None,None,measures_dict)
 
     def make_measure(self,vital_measures,all_measures,measures_dict):
@@ -315,7 +419,7 @@ class ToeUpGuessetML(PatternSection):
         measures_dict: dictionary with start_stitches, end_stitches and either n_rows or increase_x_every_y
         """
         #TODO: Check Measures dictionary
-        self._measurements=IncOrDecPatternMeasure(None,None,measures_dict)
+        self._measurements=IncOrDecPatternMeasure(measures_dict)
 
     def pattern_repeat(self):
         """
@@ -354,7 +458,7 @@ class HeelTurnML(PatternSection):
     """
     Heel turn with magic loop.
     """
-    def __init__(self,measures_dict,*args,**kwargs):
+    def __init__(self,measures_dict,label="",*args,**kwargs):
         measures_for_initial=measures_dict
         if "increase_x_every_y" not in measures_dict.keys():
             new_measures=measures_dict.copy()
@@ -362,11 +466,12 @@ class HeelTurnML(PatternSection):
             super().__init__(["start_stitches","end_stitches","increase_x_every_y"],["start_stitches","end_stitches","increase_x_every_y","first_turn","second_turn"],new_measures)
         else:
             super().__init__(["start_stitches","end_stitches","increase_x_every_y"],["start_stitches","end_stitches","increase_x_every_y","first_turn","second_turn"],new_measures)
-        self.label("Heel Turn")
+        if len(self.label())==0:
+            self.label("Heel Turn")
         self.fill_in_missing_measures()
 
     def make_measure(self,vital_measures,all_measures,measures_dict):
-        self._measurements=IncOrDecPatternMeasure(vital_measures,all_measures,measures_dict)
+        self._measurements=IncOrDecPatternMeasure(measures_dict)
 
     def _calc_first_turn(self):
         if not self._measurements.have_what_i_need(["start_stitches"]):
@@ -416,8 +521,9 @@ class HeelTurnML(PatternSection):
 
 class BasicCuff(PatternSection):
     def __init__(self,measures_dict):
-        super().__init__(None,None,measures_dict)
-        self.label("Cuff")
+        super().__init__(None,None,measures_dict,label="",)
+        if len(self.label)==0:
+            self.label("Cuff")
     
     def make_measure(self,vital_measures,all_measures,measures_dict):
         self._measurements=PatternMeasure(["start_stitches","n_rows"],[],measures_dict)
