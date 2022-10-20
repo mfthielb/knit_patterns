@@ -322,7 +322,6 @@ class ToeUpToeML(PatternSection):
     def how_to_cast_on(self):
         """
         Instructions for starting. This is a toe-up sock, so the toe starts with cast-on instructions.
-        n_start: Number of starting stitches.
         """
         n_start=self._measurements.start_stitches()
         if n_start%2:
@@ -333,7 +332,6 @@ class ToeUpToeML(PatternSection):
     def how_to_end(self):
         """
         Instructions for the end with number of stitches you should have.
-        n_end: Number of stitches you have at the end
         """
         n_end=self._measurements.end_stitches()
         per_needle=n_end/2
