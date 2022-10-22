@@ -3,7 +3,7 @@ from copy import deepcopy
 import measurement as m
 from PatternCalcs import PatternMeasure
 
-class Stitch(m.MeasureBase):
+class Guage(m.MeasureBase):
     """
     Stitches are a unit of measure. We can also convert to 
     """
