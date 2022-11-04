@@ -259,7 +259,7 @@ class PatternSection:
         """
         self._directions=[]
         self._label=label
-        self.make_measure(vital_measures,all_measures,measures_dict)
+        self.make_measure(measures_dict)
 
     def label(self,text=None):
         "Set or get the label for this section"
@@ -275,7 +275,7 @@ class PatternSection:
         pass
 
     @abstractclassmethod
-    def make_measure(self,vital_measures,all_measures,measures_dict):
+    def make_measure(self,measures_dict):
         """
         A pattern section requires a measure object. This method creates that object.
         """
@@ -306,7 +306,7 @@ class ToeUpToeML(PatternSection):
     
     #TODO: We know increase_x_every_y for a toe, so check the input dictionary
     #Add increase_x_every_y=(4,2) and make sure you're adding a multiple of 4
-    def make_measure(self,vital_measures,all_measures,measures_dict):
+    def make_measure(self,measures_dict):
         """
         Toes are usually increase 4 every 2 rows. Use defaults if missiing some measures. start_stitches to end_stitches. 
         """
@@ -368,7 +368,7 @@ class InstepML(PatternSection):
         if len(self.label())==0:
             self.label("Instep")
 
-    def make_measure(self,vital_measures,all_measures,measures_dict):
+    def make_measure(self,measures_dict):
         """
         Use an IncOrDecPatternMeasure with a 0 increase.
         """
@@ -409,9 +409,9 @@ class ToeUpGuessetML(PatternSection):
         super().__init__(None,None,measures_dict)
         if len(self.label())==0:
             self.label("Gusset")
-        self.make_measure(None,None,measures_dict)
+        self.make_measure(measures_dict)
 
-    def make_measure(self,vital_measures,all_measures,measures_dict):
+    def make_measure(self,measures_dict):
         """
         A guesset is an increase, but you only increase on a single needle.
         vital_measures: not used
@@ -470,7 +470,7 @@ class HeelTurnML(PatternSection):
             self.label("Heel Turn")
         self.fill_in_missing_measures()
 
-    def make_measure(self,vital_measures,all_measures,measures_dict):
+    def make_measure(self,measures_dict):
         self._measurements=IncOrDecPatternMeasure(measures_dict)
 
     def _calc_first_turn(self):
@@ -522,10 +522,10 @@ class HeelTurnML(PatternSection):
 class BasicCuff(PatternSection):
     def __init__(self,measures_dict):
         super().__init__(None,None,measures_dict,label="",)
-        if len(self.label)==0:
+        if len(self.label())==0:
             self.label("Cuff")
     
-    def make_measure(self,vital_measures,all_measures,measures_dict):
+    def make_measure(self,measures_dict):
         self._measurements=PatternMeasure(["start_stitches","n_rows"],[],measures_dict)
     
     def write_directions(self):
