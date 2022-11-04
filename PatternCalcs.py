@@ -250,11 +250,9 @@ class PatternSection:
     _directions (list): Directions for the pattern section in proper order. 
     """
 
-    def __init__(self,vital_measures,all_measures,measures_dict,*args,label="",**kwargs):
+    def __init__(self,measures_dict,*args,label="",**kwargs):
         """
         Initialize PatternMeasure and set label for Pattern Section
-        vital_measures (list of str): Measurements that must be input by the calling function
-        all_measures (list of str): All the measurements needed for the section, including those that are calculated
         measures_dict (dict str:int): A dictionary holding input measurements
         """
         self._directions=[]
@@ -300,7 +298,7 @@ class ToeUpToeML(PatternSection):
     A Toe section for a basic toe-up sock using magic loop
     """
     def __init__(self,measures_dict,label=""):
-        super().__init__(None,None,measures_dict,label=label)
+        super().__init__(measures_dict,label=label)
         if len(self.label())==0:
             self.label("Toe")
     
@@ -364,7 +362,7 @@ class InstepML(PatternSection):
     Directions for the instep of a sock. Toe up or cuff down, the directions are the same
     """
     def __init__(self,measures_dict):
-        super().__init__(None,None,measures_dict)
+        super().__init__(measures_dict)
         if len(self.label())==0:
             self.label("Instep")
 
@@ -406,7 +404,7 @@ class ToeUpGuessetML(PatternSection):
     _directions: written directions
     """
     def __init__(self,measures_dict):
-        super().__init__(None,None,measures_dict)
+        super().__init__(measures_dict)
         if len(self.label())==0:
             self.label("Gusset")
         self.make_measure(measures_dict)
@@ -463,9 +461,9 @@ class HeelTurnML(PatternSection):
         if "increase_x_every_y" not in measures_dict.keys():
             new_measures=measures_dict.copy()
             new_measures["increase_x_every_y"]=(-1,1)
-            super().__init__(["start_stitches","end_stitches","increase_x_every_y"],["start_stitches","end_stitches","increase_x_every_y","first_turn","second_turn"],new_measures)
+            super().__init__(new_measures)
         else:
-            super().__init__(["start_stitches","end_stitches","increase_x_every_y"],["start_stitches","end_stitches","increase_x_every_y","first_turn","second_turn"],new_measures)
+            super().__init__(new_measures)
         if len(self.label())==0:
             self.label("Heel Turn")
         self.fill_in_missing_measures()
@@ -521,7 +519,7 @@ class HeelTurnML(PatternSection):
 
 class BasicCuff(PatternSection):
     def __init__(self,measures_dict):
-        super().__init__(None,None,measures_dict,label="",)
+        super().__init__(measures_dict,label="",)
         if len(self.label())==0:
             self.label("Cuff")
     
