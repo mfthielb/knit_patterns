@@ -547,6 +547,13 @@ class BasicCuff(PatternSection):
         rows=self._measurements.measure_values("n_rows")
         return f"BasicCuff({{'start_stitches':{start},'n_rows':{rows},'increase_x_every_y':(0,1)}})."
 
+def sock(toestitches, instep, x, y, z):
+    return [
+        ToeUpToeML({"start_stitches":toestitches, "end_stitches":instep}),
+        InstepML({"start_stitches":instep}),
+
+    ]
+
 def main():
     print("Basic Sock Elements")
     #In the finished product, there would be a SockCalculator that takes in the 
@@ -558,7 +565,7 @@ def main():
     cuff=BasicCuff({"start_stitches":64,"n_rows":12})
 
     #Each object makes its calculations on create. 
-    pattern_list=[toe,instep,gusset,turn,cuff]
+    pattern_list=sock(64, 88,x,y,z)#[toe,instep,gusset,turn,cuff]
     # #Print directions to screen
     print("\n----Pattern Directions------")
     for s in pattern_list:

@@ -8,6 +8,7 @@ class TestIncOrDecMeasure(unittest.TestCase):
         """
         Test __init__ warnings 
         """
+        #TODO: first shoudl raise a warning. Second should raise an error. 
         with self.assertRaises(ValueError):
             toe=IncOrDecPatternMeasure({"start_stitches":24,"end_stitches":48})
         with self.assertRaises(Warning):
