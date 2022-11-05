@@ -52,5 +52,3 @@ Builds a series of PatternSections this pattern, and keeps track of the order in
 1. Gusset: Continue knitting a cylinder, but add two stitches to the botton of the sock on every other row. This creates a "triangle" on each side of the foot that extends from the sole to the ankle. 
 1. Heel: Stop knitting on the top of the foot and knit back and forth across the botton, reducing by one stitch on each row. This builds the sock up the back of the foot (along the achillies tendon). When finished, the sock has a "cup" around the back of the foot, and you are ready to knit around the let. 
 1. Cuff: Finish the sock by knitting ribbing around the top for a few rows. This makes the top of the sock "stretchy" so it's easy to put on and stayes in place. 
-
-![Sock Diagram][sock_diagram.jpgRraw=true "Diagram for How a Toe-Up Sock is Knitted"]
