@@ -1,4 +1,5 @@
 from abc import abstractclassmethod
+from measurement.base import MeasureBase
 """
 Basic classes for PatternMeasure's and PatternSections
 """
@@ -547,10 +548,63 @@ class BasicCuff(PatternSection):
         rows=self._measurements.measure_values("n_rows")
         return f"BasicCuff({{'start_stitches':{start},'n_rows':{rows},'increase_x_every_y':(0,1)}})."
 
+class Guage(MeasureBase):
+    """
+    A class to hold knitting guage
+    s: float stitches per unit
+    r: float rows per unit
+    units: 'in' (inches) or 'cm' (centimeters)
+    """
+    STANDARD_UNIT='cm'
+    UNITS={
+        'cm':1.0,
+        'in':2.54,
+        'ft':30.48}
+    ALIAS={'inch':'in',
+        'centimeter': 'cm',
+        'feet':'ft'}
+    SI_UNITS=['in','cm']
+
+    def __init__(self,s_per,r_per,*args,units='in',**kwargs):
+        """
+        Initialize s, r, and units,
+        s_per: tuple (x,y) where x is number of stitches and y is number of units
+        r_per: tuple (x,y) where x is number of stitches and y is number of units
+        units: str 'in' (inches) or 'cm' (centimeters)
+        """
+        if units not in self.SI_UNITS:
+            raise ValueError(f"Units must be centimeters ('cm') or inches ('in') units given was {units}.")
+        elif units=='cm':
+            self._s_per=(s_per[0]/s_per[1])
+            self._r_per=(r_per[0]/r_per[1])
+        elif units=='in':
+            self._s_per=s_per[0]/(s_per[1]*2.54)
+            self._r_per=r_per[0]/(r_per[1]*2.54)
+        super().__init__(*args,**kwargs)
+    
+    def s(self):
+        return self._s_per
+
+    def r(self):
+        return self._r_per
+# class SockPattern:
+#     """
+#     Base class. Defines interface for pattern calculations.
+#     Members:
+#     guage: Stitches per inch
+#     _foot_measure: FootMeasure for foot measurements
+#     _pattern_sections: List of pattern sections (order matters)
+#     Methods:
+#     _calc_pattern: Method to create pattern sections with appropriate measurements
+#     _write_pattern: Method to write directions for pattern sections
+#     """
+
+#     def __init__(foot_dictionary{})
+
 def sock(toestitches, instep, x, y, z):
     return [
         ToeUpToeML({"start_stitches":toestitches, "end_stitches":instep}),
-        InstepML({"start_stitches":instep}),
+        InstepML({"start_stitches":instep})
 
     ]
 
@@ -565,13 +619,18 @@ def main():
     cuff=BasicCuff({"start_stitches":64,"n_rows":12})
 
     #Each object makes its calculations on create. 
-    pattern_list=sock(64, 88,x,y,z)#[toe,instep,gusset,turn,cuff]
+    #pattern_list=sock(64, 88,x,y,z)#
     # #Print directions to screen
+    pattern_list=[toe,instep,gusset,turn,cuff]
     print("\n----Pattern Directions------")
     for s in pattern_list:
     #A PatternSection only writes its directions when prompted
         s.write_directions()
         print("\n"+s.label())
         s.print_directions()
+    
+    g=Guage((30,4),(30,4),cm=10)
+    print("This measurement has this many centimeters: {0}".format(g.cm))
+    print("This measurement has this many rows: {0}".format(g.r()))
 
 if __name__=="__main__": main()
