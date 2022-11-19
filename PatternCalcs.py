@@ -1,5 +1,6 @@
 from abc import abstractclassmethod
-from measurement.base import MeasureBase
+from measurement.measures import Distance
+from containers import namedtuple
 """
 Basic classes for PatternMeasure's and PatternSections
 """
@@ -68,26 +69,6 @@ class PatternMeasure:
                     raise TypeError(f"Value {i} is not a string. Cannot be a measure name.")
                 self.all_measures(self.all_measures().remove(i))
     
-    def edit_vital_measures(self,va=set(),vrm=set()):
-        """
-        Add/remove a single string or an iterable that can be made into a set to/from _vital_measures
-        """
-        if isinstance(va,str):
-            self.vital_measures(self.vital_measures().add(va))
-        else:
-            for i in set(va):
-                if not isinstance(i,str):
-                    raise ValueError(f"Value {i} is not a string. Cannot be a measure name.")
-                self.vital_measures(self.vital_measures().add(i))
-                self.all_measures(self.all_measures().add(i))
-        if isinstance(vrm,str):
-            self.vital_measures(self.vital_measures().remove(vrm))
-        else:
-            for i in set(vrm):
-                if not isinstance(i,str):
-                    raise TypeError(f"Value {i} is not a string. Cannot be a measure name.")
-                self.vital_measures(self.vital_measures().remove(i))
-
     def vital_measures(self,v=None):
         if v is not None:
             if isinstance(v,str):
@@ -548,65 +529,89 @@ class BasicCuff(PatternSection):
         rows=self._measurements.measure_values("n_rows")
         return f"BasicCuff({{'start_stitches':{start},'n_rows':{rows},'increase_x_every_y':(0,1)}})."
 
-class Guage(MeasureBase):
+class FootMeasure(PatternMeasure):
     """
-    A class to hold knitting guage
-    s: float stitches per unit
-    r: float rows per unit
-    units: 'in' (inches) or 'cm' (centimeters)
+    A measurement class to hold physical measurements for a foot.
+    Members
+    units: 'in' or 'cm' ('in' by default)
+    ease_adjusted: Socks have 10% or 1-1.5 inches negative ease. bool for whether foot measurements have been ease adjusted. 
     """
-    STANDARD_UNIT='cm'
-    UNITS={
-        'cm':1.0,
-        'in':2.54,
-        'ft':30.48}
-    ALIAS={'inch':'in',
-        'centimeter': 'cm',
-        'feet':'ft'}
-    SI_UNITS=['in','cm']
-
-    def __init__(self,s_per,r_per,*args,units='in',**kwargs):
-        """
-        Initialize s, r, and units,
-        s_per: tuple (x,y) where x is number of stitches and y is number of units
-        r_per: tuple (x,y) where x is number of stitches and y is number of units
-        units: str 'in' (inches) or 'cm' (centimeters)
-        """
-        if units not in self.SI_UNITS:
-            raise ValueError(f"Units must be centimeters ('cm') or inches ('in') units given was {units}.")
-        elif units=='cm':
-            self._s_per=(s_per[0]/s_per[1])
-            self._r_per=(r_per[0]/r_per[1])
-        elif units=='in':
-            self._s_per=s_per[0]/(s_per[1]*2.54)
-            self._r_per=r_per[0]/(r_per[1]*2.54)
-        super().__init__(*args,**kwargs)
+    def __init__(self,measure_dict,units='in',ease=False):
+        super().__init__(["around_foot","toe_to_heel"],None,measure_dict)
+        if units in ['cm', 'in']:
+            self.units=units
+        else:
+            #TODO; Implement the ability to guess inches or cm based on measurements
+            raise Warning(f"Invalid units for foot measure, valid units are 'in' or 'cm'. Units given are {units}.")
+        #TODO: Implement the ability to guess sock size based on shoe size and shoe size based on sock size
+        self.calc_ease()
+        if not self.have_what_i_need():
+            raise Warning("Foot measure initialized without all needed measurements. Need: {0}. Initialized with: {1}").format(self.what_do_i_have(),self.what_do_i_need())
     
-    def s(self):
-        return self._s_per
+    def calc_ease(self):
+        if self.ease_adjust=True:
+            print("Measurements already ease adjusted: "+self.__str__())
+            return
+        self.measure_value("around_foot",self.measure_value("around_foot")*0.9)
+        self.ease_adjusted=True
+    
+    def __str__(self):
+        return ("Measure for a foot that is {0} {2} around and {0} {2} long.".format(self.(measure_values("around_foot"),self.measure_values("toe_to_heel"),self.units)))
+    def __repr__(self):
+        return "FootMeasure(\{'around_foot'={0},'toe_to_heel'={1}\},units={2},ease={3})".format(self.measure_values("around_foot"),self.measure_values("toe_to_heel"),self.units,self.ease_adjusted)
 
-    def r(self):
-        return self._r_per
-# class SockPattern:
-#     """
-#     Base class. Defines interface for pattern calculations.
-#     Members:
-#     guage: Stitches per inch
-#     _foot_measure: FootMeasure for foot measurements
-#     _pattern_sections: List of pattern sections (order matters)
-#     Methods:
-#     _calc_pattern: Method to create pattern sections with appropriate measurements
-#     _write_pattern: Method to write directions for pattern sections
-#     """
+class Guage(namedtuple('Guage',['s_per_unit','r_per_unit','units'])):
+    __slots__=()
+    def stitches(self,v):
+        """
+        Guage is often set as x stitches per y units. Check to see if we have a tuple or not.
+        """
+        if isinstance(self.s_per_unit,tuple):
+            return self.s_per_unit[0]/self.s_per_unit[1]*v
+        else:
+            return self.s_per_unit*v
+    def rows(self,v):
+        """
+        Guage is often set as x rows per y units. Check to see if we have a tuple or not.
+        """
+        if isinstance(self.r_per_unit,tuple):
+            return self.r_per_unit[0]/self.r_per_unit[1]*v
+        else:
+            return self.r_per_unit*v
+    def units_rows()
+    def __str__():
+        return "Guage is: {0}, stitches per {2} and {1} rows per {2}.".format(self.s_per_unit,self.r_per_unit,self.units)
+    def __repr__():
+        return "Guage(s_per_unit={0},r_per_unit={1},units={2})".format(self.s_per_unit,self.r_per_unit,self.units)
 
-#     def __init__(foot_dictionary{})
+class ToeUpSockPattern():
+    """
+    Basic toe up sock pattern class.
+    Members
+    guage: Guage object holding stitches/unit and rows/unit and units of pattern
+    foot_measurements: FootMeasure object with foot measurements
+    pattern_sections: list object of PatternSections
+    Methods
+    stitches_around_foot: number of stitches around the foot
+    stitches_toe_to_heel: number of stitches from toe to heel
+    heel_type
+    """
+    def __init__(foot_measure_dict,guage,**kwargs):
+        self.guage=guage
+        self.foot_measurements=FootMeasure(foot_measure_dict,units=guage.units)
+        self.foot_measurements.calc_ease()
+    
+    def stitches_around_foot(self):
+        return self.guage.stitches(self.foot_measurements.measure_values("around_foot"))
+    def rows_toe_to_heel(self):
+        return self.guage.rows(self.foot_measurements.measure_values("toe_to_heel"))
 
-def sock(toestitches, instep, x, y, z):
-    return [
-        ToeUpToeML({"start_stitches":toestitches, "end_stitches":instep}),
-        InstepML({"start_stitches":instep})
-
-    ]
+    def write_sock_pattern(self):
+        #sock pattern goes here
+        toe=ToeUpToeML({"start_stitches":round(self.stitches_around_foot()/2), "end_stitches":self.stitches_around_foot()})
+        toe_rows=toe.measure_values("n_rows")
+        heel_rows=self.guage.rows()
+        instep=Instep({"start_stitches"=self.stitches_around_foot(),"end_stitches"=self.stitches_around_foot(),"n_rows"=toe.n_rows()})
 
 def main():
     print("Basic Sock Elements")
@@ -629,8 +634,9 @@ def main():
         print("\n"+s.label())
         s.print_directions()
     
-    g=Guage((30,4),(30,4),cm=10)
+    g=Guage((30,4),(30,4),'in',cm=10)
     print("This measurement has this many centimeters: {0}".format(g.cm))
     print("This measurement has this many rows: {0}".format(g.r()))
+    print("This measurement has this many inches: {0}".format(g.inch))
 
 if __name__=="__main__": main()
