@@ -549,14 +549,15 @@ class FootMeasure(PatternMeasure):
             raise Warning("Foot measure initialized without all needed measurements. Need: {0}. Initialized with: {1}").format(self.what_do_i_have(),self.what_do_i_need())
     
     def calc_ease(self):
-        if self.ease_adjust=True:
+        if self.ease_adjust:
             print("Measurements already ease adjusted: "+self.__str__())
             return
         self.measure_value("around_foot",self.measure_value("around_foot")*0.9)
         self.ease_adjusted=True
     
     def __str__(self):
-        return ("Measure for a foot that is {0} {2} around and {0} {2} long.".format(self.(measure_values("around_foot"),self.measure_values("toe_to_heel"),self.units)))
+        return "Measure for a foot that is {0} {2} around and {0} {2} long.".format(self.measure_values("around_foot"),self.measure_values("toe_to_heel"),self.units)
+
     def __repr__(self):
         return "FootMeasure(\{'around_foot'={0},'toe_to_heel'={1}\},units={2},ease={3})".format(self.measure_values("around_foot"),self.measure_values("toe_to_heel"),self.units,self.ease_adjusted)
 
@@ -578,7 +579,18 @@ class Guage(namedtuple('Guage',['s_per_unit','r_per_unit','units'])):
             return self.r_per_unit[0]/self.r_per_unit[1]*v
         else:
             return self.r_per_unit*v
-    def units_rows()
+
+    def units_to_rows(self,v,units=None):
+        if isinstance(self.s_per_unit,tuple):
+            return self.r_per_unit[1]/self.r_per_unit[0]*v
+        else:
+            return v/self.r_per_unit
+
+    def units_to_stitches(self,v):
+        if isinstance(self.s_per_unit,tuple):
+            return self.s_per_unit[1]/self.s_per_unit[0]*v
+        else:
+            return v/self.s_per_unit
     def __str__():
         return "Guage is: {0}, stitches per {2} and {1} rows per {2}.".format(self.s_per_unit,self.r_per_unit,self.units)
     def __repr__():
@@ -596,22 +608,38 @@ class ToeUpSockPattern():
     stitches_toe_to_heel: number of stitches from toe to heel
     heel_type
     """
-    def __init__(foot_measure_dict,guage,**kwargs):
+    def __init__(self,foot_measure_dict,guage,**kwargs):
         self.guage=guage
-        self.foot_measurements=FootMeasure(foot_measure_dict,units=guage.units)
+        self.foot_measurements=FootMeasure(foot_measure_dict,units=guage.units,**kwargs)
         self.foot_measurements.calc_ease()
     
     def stitches_around_foot(self):
+        """
+        Number of stitches to go around foot. Always a multiple of 4, so round as needed.
+        """
         return self.guage.stitches(self.foot_measurements.measure_values("around_foot"))
     def rows_toe_to_heel(self):
         return self.guage.rows(self.foot_measurements.measure_values("toe_to_heel"))
 
-    def write_sock_pattern(self):
+    def calculate_pattern(self):
         #sock pattern goes here
         toe=ToeUpToeML({"start_stitches":round(self.stitches_around_foot()/2), "end_stitches":self.stitches_around_foot()})
-        toe_rows=toe.measure_values("n_rows")
-        heel_rows=self.guage.rows()
-        instep=Instep({"start_stitches"=self.stitches_around_foot(),"end_stitches"=self.stitches_around_foot(),"n_rows"=toe.n_rows()})
+        
+        #Gusset heels start 2 inches from back of foot.
+        if self.guage.units=='in':
+            heel_rows=self.guage.units_to_rows(2)
+        else:
+            heel_rows=self.guage.units_to_rows(2.54*2)
+
+        instep_rows=self.rows_toe_to_heel()-toe.n_rows()-heel_rows
+        instep=InstepML({"start_stitches":self.stitches_around_foot(),"end_stitches":self.stitches_around_foot(),"n_rows":instep_rows})
+        gusset_increase=round(instep.measure_values("end_stitches")*0.25)
+        gusset=ToeUpGuessetML({"start_stitches":instep.measure_values("end_stitches"),"end_stitches":instep.measure_values("end_stitches")+guesset_increase})
+        heel_turn_start=gusset_increase+round(instep.measure_values("end_stitches")/2)
+        heel_turn_end=round(self.stitches_around_foot()/2)
+        heel_turn=HeelTurnML({"start_stitches":heel_turn_start,"end_stitches":(heel_turn_end)})
+        cuff=BasicCuff({"start_stitches":self.stitches_around_foot()})
+        return [toe,instep,gusset,heel_turn,cuff]
 
 def main():
     print("Basic Sock Elements")
@@ -634,9 +662,4 @@ def main():
         print("\n"+s.label())
         s.print_directions()
     
-    g=Guage((30,4),(30,4),'in',cm=10)
-    print("This measurement has this many centimeters: {0}".format(g.cm))
-    print("This measurement has this many rows: {0}".format(g.r()))
-    print("This measurement has this many inches: {0}".format(g.inch))
-
 if __name__=="__main__": main()
