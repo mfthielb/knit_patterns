@@ -1,6 +1,6 @@
 from abc import abstractclassmethod
 from measurement.measures import Distance
-from containers import namedtuple
+from collections import namedtuple
 """
 Basic classes for PatternMeasure's and PatternSections
 """
@@ -18,7 +18,7 @@ class PatternMeasure:
         Fill _measure_values dictionary and make sure we have all the measurements the user told us we needed.
         """
         if all_measures is not None:
-            self.all_measures(all_measures,vital_measures)
+            self.all_measures(set(all_measures+vital_measures))
         else:
             self._all_measures=set()
         self._measure_values={}
@@ -102,7 +102,7 @@ class PatternMeasure:
             self._measure_values[key]=value
             self.edit_measures(va=key)
         if key in self._measure_values.keys():
-            return self._measure_values[key]
+            return self._measure_values.get(key)
         else:
             raise ValueError(f"Key {key} not in measure_values dictionary")
 
@@ -543,20 +543,22 @@ class FootMeasure(PatternMeasure):
         else:
             #TODO; Implement the ability to guess inches or cm based on measurements
             raise Warning(f"Invalid units for foot measure, valid units are 'in' or 'cm'. Units given are {units}.")
+        self.ease_adjusted=ease
         #TODO: Implement the ability to guess sock size based on shoe size and shoe size based on sock size
         self.calc_ease()
-        if not self.have_what_i_need():
-            raise Warning("Foot measure initialized without all needed measurements. Need: {0}. Initialized with: {1}").format(self.what_do_i_have(),self.what_do_i_need())
+        if not self.have_what_i_need(['around_foot','toe_to_heel']):
+            raise Warning("Foot measure initialized without all needed measurements. Need: {0}. Initialized with: {1}").format(self.what_do_i_have(),self.vital_measures())
     
     def calc_ease(self):
-        if self.ease_adjust:
+        if self.ease_adjusted:
             print("Measurements already ease adjusted: "+self.__str__())
             return
-        self.measure_value("around_foot",self.measure_value("around_foot")*0.9)
+        self.measure_values("around_foot",value=(self.measure_values("around_foot")*0.9))
+        self.measure_values("toe_to_heel",value=(self.measure_values("toe_to_heel")*0.9))
         self.ease_adjusted=True
     
     def __str__(self):
-        return "Measure for a foot that is {0} {2} around and {0} {2} long.".format(self.measure_values("around_foot"),self.measure_values("toe_to_heel"),self.units)
+        return "Measure for a foot that is {0} {2} around and {1} {2} long.".format(self.measure_values("around_foot"),self.measure_values("toe_to_heel"),self.units)
 
     def __repr__(self):
         return "FootMeasure(\{'around_foot'={0},'toe_to_heel'={1}\},units={2},ease={3})".format(self.measure_values("around_foot"),self.measure_values("toe_to_heel"),self.units,self.ease_adjusted)
@@ -564,16 +566,16 @@ class FootMeasure(PatternMeasure):
 class SockStitches(namedtuple('PatternStitches',['s_around_foot','r_toe_to_heel','r_per_inch'])):
     @property
     def toe_start(self):
-        return round(self.around_foot/2)
+        return round(self.s_around_foot/2)
     @property
     def toe_rows(self):
-        return round(self.around_foot/4)
+        return round(self.s_around_foot/2)
     @property
     def instep_rows(self):
         return self.r_toe_to_heel-self.toe_rows-self.r_per_inch*2
     @property
     def gusset_increase(self):
-        return self.around_foot/4
+        return self.s_around_foot/4
     
 class Guage(namedtuple('Guage',['s_per_unit','r_per_unit','units'])):
     __slots__=()
@@ -615,7 +617,6 @@ class ToeUpSockPattern():
             raise ValueError("Guage should be Guage((int,int),(int,int),units). Guage entered is {0}".format(guage.__repr__()))
         self.guage=guage
         self.foot_measurements=FootMeasure(foot_measure_dict,units=guage.units,**kwargs)
-        self.foot_measurements.calc_ease()
         foot_stitches=guage.stitches(self.foot_measurements.measure_values('around_foot'))
         total_foot_rows=guage.rows(self.foot_measurements.measure_values('toe_to_heel'))
         r_per_unit=round(guage.r_per_unit[0]/guage.r_per_unit[1])
@@ -626,10 +627,10 @@ class ToeUpSockPattern():
 
     def calculate_pattern(self):
         #sock pattern goes here
-        toe=ToeUpToeML({"start_stitches":self.stitches.toe_start, "end_stitches":self.stitches.s_around_foot})
+        toe=ToeUpToeML({"start_stitches":self.stitches.toe_start, "end_stitches":self.stitches.s_around_foot,"increase_x_every_y":(4,2)})
         instep=InstepML({"start_stitches":self.stitches.s_around_foot,"end_stitches":self.stitches.s_around_foot,"n_rows":self.stitches.instep_rows})
-        gusset=ToeUpGuessetML({"start_stitches":self.stitches.s_around_foot,"end_stitches":self.stitches.guesset_increase})
-        heel_turn=HeelTurnML({"start_stitches":self.toe_start+self.stitches.gusset_increase,"end_stitches":(self.stitches.toe_start)})
+        gusset=ToeUpGuessetML({"start_stitches":self.stitches.s_around_foot,"end_stitches":self.stitches.gusset_increase,"increase_x_every_y":(2,2)})
+        heel_turn=HeelTurnML({"start_stitches":self.stitches.toe_start+self.stitches.gusset_increase,"end_stitches":(self.stitches.toe_start)})
         cuff=BasicCuff({"start_stitches":self.stitches.s_around_foot,"end_stitches":self.stitches.s_around_foot,"n_rows":self.stitches.r_per_inch})
         self.pattern_sections=(toe,instep,gusset,heel_turn,cuff)
     
