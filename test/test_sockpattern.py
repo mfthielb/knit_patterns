@@ -1,7 +1,7 @@
 import sys
 sys.path.append('..')
 import unittest 
-from PatternCalcs import Guage, ToeUpSockPattern
+from PatternCalcs import *
 
 class TestGuage(unittest.TestCase):
     def test_guage_init(self):
@@ -25,5 +25,11 @@ class TestPatternCalculator(unittest.TestCase):
         self.assertAlmostEqual(self.sock.foot_measurements.measure_values("toe_to_heel"),0.9*9.5)
         self.assertAlmostEqual(self.sock.stitches.r_toe_to_heel,9.5*30/4*0.9)
         self.assertAlmostEqual(self.sock.stitches.s_around_foot,4.1*2*30/4*0.9)
+
+    def test_pattern_calculations(self):
+        self.sock.calculate_pattern()
+        expected_types=[ToeUpToeML,InstepML,ToeUpGuessetML,HeelTurnML,BasicCuff]
+        for p,e in zip(self.sock.pattern_sections,expected_types):
+            self.assertIsInstance(p,e)
 
 if __name__=="__main__": unittest.main()

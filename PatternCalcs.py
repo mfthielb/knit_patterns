@@ -267,7 +267,12 @@ class PatternSection:
         How to fill the directions list
         """
         pass
-
+    
+    @abstractclassmethod
+    def end_stitches(self):
+        """
+        Calculate how many stitches you have at the end and return.
+        """
     def print_directions(self):
         """
         Basic print method to print all directions in _directions (a list)
@@ -368,6 +373,8 @@ class InstepML(PatternSection):
         """
         self._directions.append(self.how_to_end())
     
+    def end_stitches(self):
+        return self._measurements.end_stitches()
     def __str__(self):
         start=self._measurements.start_stitches()
         rows=self._measurements.n_rows()
