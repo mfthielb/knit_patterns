@@ -280,14 +280,34 @@ class PatternSection:
         for d in self._directions:
             print(d)
 
-class ToeUpToeML(PatternSection):
+class IncOrDecPatternSection(PatternSection):
+    """
+    Generic class method of an increasing or decreasing PatternSection
+    """
+    def __init__(self,measures_dict,label=""):
+        super().__init__(measures_dict,label=label)
+
+    def start_stitches(self):
+        return self._measurements.measure_values("start_stitches")
+
+    def end_stitches(self):
+        return self._measurements.measure_values("end_stitches")
+
+    def n_rows(self):
+        return self._measurements.measure_values("n_rows")    
+
+    def __str__(self):
+        start=self._measurements.start_stitches()
+        end=self._measurements.end_stitches()
+        l=self.label()
+        return f"{l} for magic loop toe-up {start} stitches inc to {end} stitches."
+
+class ToeUpToeML(IncOrDecPatternSection):
     """
     A Toe section for a basic toe-up sock using magic loop
     """
     def __init__(self,measures_dict,label=""):
         super().__init__(measures_dict,label=label)
-        if len(self.label())==0:
-            self.label("Toe")
     
     #TODO: We know increase_x_every_y for a toe, so check the input dictionary
     #Add increase_x_every_y=(4,2) and make sure you're adding a multiple of 4
@@ -334,22 +354,17 @@ class ToeUpToeML(PatternSection):
         self._directions.append(self.how_to_end())
         self._directions.append("You will have knitted {0} rows.".format(self._measurements.n_rows()))
     
-    def __str__(self):
-        start=self._measurements.start_stitches()
-        end=self._measurements.end_stitches()
-        return f"Toe for magic loop toe-up {start} stitches inc to {end} stitches."
-    
     def __repr__(self):
         start=self._measurements.start_stitches()
         end=self._measurements.end_stitches()
         return f"ToeUpToeML({{'start_stitches':{start},'end_stitches':{end},'increase_x_every_y':(4,2)}})."
 
-class InstepML(PatternSection):
+class InstepML(IncOrDecPatternSection):
     """
     Directions for the instep of a sock. Toe up or cuff down, the directions are the same
     """
-    def __init__(self,measures_dict):
-        super().__init__(measures_dict)
+    def __init__(self,measures_dict,label=""):
+        super().__init__(measures_dict,label=label)
         if len(self.label())==0:
             self.label("Instep")
 
@@ -372,9 +387,7 @@ class InstepML(PatternSection):
         Gusset is just one line of directions.
         """
         self._directions.append(self.how_to_end())
-    
-    def end_stitches(self):
-        return self._measurements.end_stitches()
+
     def __str__(self):
         start=self._measurements.start_stitches()
         rows=self._measurements.n_rows()
@@ -385,15 +398,15 @@ class InstepML(PatternSection):
         end=self._measurements.n_rows()
         return f"InstepML({{'start_stitches':{start},'n_rows':{end},'increase_x_every_y':(0,1)}})."
     
-class ToeUpGuessetML(PatternSection):
+class ToeUpGuessetML(IncOrDecPatternSection):
     """
     A basic guesset section for a toe-up sock using magic loop
     Attributes: 
     _measurements: An IncOrDecPatternMeasure with a positive increase
     _directions: written directions
     """
-    def __init__(self,measures_dict):
-        super().__init__(measures_dict)
+    def __init__(self,measures_dict,label=""):
+        super().__init__(measures_dict,label=label)
         if len(self.label())==0:
             self.label("Gusset")
         self.make_measure(measures_dict)
@@ -441,18 +454,17 @@ class ToeUpGuessetML(PatternSection):
         end=self._measurements.end_stitches()
         return f"ToeUpGussetML({{'start_stitches':{start},'end_stitches':{end},'increase_x_every_y':(1,1)}})."
 
-class HeelTurnML(PatternSection):
+class HeelTurnML(IncOrDecPatternSection):
     """
     Heel turn with magic loop.
     """
     def __init__(self,measures_dict,label="",*args,**kwargs):
-        measures_for_initial=measures_dict
         if "increase_x_every_y" not in measures_dict.keys():
             new_measures=measures_dict.copy()
             new_measures["increase_x_every_y"]=(-1,1)
-            super().__init__(new_measures)
+            super().__init__(new_measures,label=label)
         else:
-            super().__init__(new_measures)
+            super().__init__(measures_dict,label,label)
         if len(self.label())==0:
             self.label("Heel Turn")
         self.fill_in_missing_measures()
@@ -463,7 +475,7 @@ class HeelTurnML(PatternSection):
     def _calc_first_turn(self):
         if not self._measurements.have_what_i_need(["start_stitches"]):
             raise ValueError("start_stitches not in measures dictionary.")
-        self._measurements.measure_values("first_turn",self._measurements.measure_values("start_stitches")-1)
+        self._measurements.measure_values("first_turn",value=self.start_stitches()-1)
     
     def _calc_second_turn(self):
         """
@@ -497,8 +509,8 @@ class HeelTurnML(PatternSection):
         self._directions.append("Knit 1 row around.\n")
     
     def __str__(self):
-        start=self._measurements.start_stitches()
-        end=self._measurements.end_stitches()
+        start=self.start_stitches()
+        end=self.end_stitches()
         return f"Heel turn for magic loop toe-up {start} stitches inc to {end} stitches."
     
     def __repr__(self):
@@ -506,14 +518,14 @@ class HeelTurnML(PatternSection):
         end=self._measurements.end_stitches()
         return f"HeelTurnML({{'start_stitches':{start},'end_stitches':{end},'increase_x_every_y':(-1,1)}})."
 
-class BasicCuff(PatternSection):
-    def __init__(self,measures_dict):
-        super().__init__(measures_dict,label="",)
+class BasicCuff(IncOrDecPatternSection):
+    def __init__(self,measures_dict,label=""):
+        super().__init__(measures_dict,label=label)
         if len(self.label())==0:
             self.label("Cuff")
     
     def make_measure(self,measures_dict):
-        self._measurements=PatternMeasure(["start_stitches","n_rows"],[],measures_dict)
+        self._measurements=IncOrDecPatternMeasure(measures_dict)
     
     def write_directions(self):
         self._directions.append("Row 1: K1, P1 for all {0} around".format(self._measurements.measure_values("start_stitches")))
@@ -521,20 +533,10 @@ class BasicCuff(PatternSection):
         self._directions.append("Bind off LOOSELY (or you won't be able to get the sock onto your foot).")
     
     def __str__(self):
-        return "Cuff {0} stitches for {1} rows".format(self._measurements.start_stitches(),self._measurements.n_rows())
+        return "Cuff {0} stitches for {1} rows".format(self.start_stitches(),self.n_rows())
     
     def __repr__(self):
-        return "Cuff({'start_stitches':{0},'end_stitches':{0},n_rows: {1})".format(self._measurements.start_stitches(),self._measurements.n_rows())
-    
-    def __str__(self):
-        start=self._measurements.measure_values("start_stitches")
-        rows=self._measurements.measure_values("n_rows")
-        return f"Generic cuff for sock that is {start} stitches around and {rows} long."
-    
-    def __repr__(self):
-        start=self._measurements.measure_values("start_stitches")
-        rows=self._measurements.measure_values("n_rows")
-        return f"BasicCuff({{'start_stitches':{start},'n_rows':{rows},'increase_x_every_y':(0,1)}})."
+        return "Cuff({'start_stitches':{0},'end_stitches':{0},n_rows: {1})".format(self.start_stitches(),self.n_rows())
 
 class FootMeasure(PatternMeasure):
     """
@@ -636,7 +638,7 @@ class ToeUpSockPattern():
         #sock pattern goes here
         toe=ToeUpToeML({"start_stitches":self.stitches.toe_start, "end_stitches":self.stitches.s_around_foot,"increase_x_every_y":(4,2)})
         instep=InstepML({"start_stitches":self.stitches.s_around_foot,"end_stitches":self.stitches.s_around_foot,"n_rows":self.stitches.instep_rows})
-        gusset=ToeUpGuessetML({"start_stitches":self.stitches.s_around_foot,"end_stitches":self.stitches.gusset_increase,"increase_x_every_y":(2,2)})
+        gusset=ToeUpGuessetML({"start_stitches":self.stitches.s_around_foot,"end_stitches":self.stitches.gusset_increase+self.stitches.s_around_foot,"increase_x_every_y":(2,2)})
         heel_turn=HeelTurnML({"start_stitches":self.stitches.toe_start+self.stitches.gusset_increase,"end_stitches":(self.stitches.toe_start)})
         cuff=BasicCuff({"start_stitches":self.stitches.s_around_foot,"end_stitches":self.stitches.s_around_foot,"n_rows":self.stitches.r_per_inch})
         self.pattern_sections=(toe,instep,gusset,heel_turn,cuff)
@@ -650,6 +652,10 @@ class ToeUpSockPattern():
 
 def main():
     print("Basic Sock Elements")
+    foot_measure_dict={'around_foot':42,'toe_to_heel':9.5}
+    guage=Guage((32,4),(32,4),'in')
+    sock=ToeUpSockPattern(foot_measure_dict,guage)
+    sock.calculate_pattern()
     #In the finished product, there would be a SockCalculator that takes in the 
     #measurements for the foot (in inches or cm) and calculates the stitches for each of these calls
     toe=ToeUpToeML({"start_stitches":32,"end_stitches":64,"increase_x_every_y":(4,2)})
