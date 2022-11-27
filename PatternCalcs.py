@@ -652,24 +652,12 @@ class ToeUpSockPattern():
 
 def main():
     print("Basic Sock Elements")
-    foot_measure_dict={'around_foot':42,'toe_to_heel':9.5}
+    foot_measure_dict={'around_foot':(4*2)/0.9,'toe_to_heel':9.5}
     guage=Guage((32,4),(32,4),'in')
     sock=ToeUpSockPattern(foot_measure_dict,guage)
     sock.calculate_pattern()
-    #In the finished product, there would be a SockCalculator that takes in the 
-    #measurements for the foot (in inches or cm) and calculates the stitches for each of these calls
-    toe=ToeUpToeML({"start_stitches":32,"end_stitches":64,"increase_x_every_y":(4,2)})
-    instep=InstepML({"start_stitches":64,"end_stitches":64,"n_rows":24})
-    gusset=ToeUpGuessetML({"start_stitches":64,"end_stitches":88,"increase_x_every_y":(2,2)})
-    turn=HeelTurnML({"start_stitches":56,"end_stitches":32})
-    cuff=BasicCuff({"start_stitches":64,"n_rows":12})
-
-    #Each object makes its calculations on create. 
-    #pattern_list=sock(64, 88,x,y,z)#
-    # #Print directions to screen
-    pattern_list=[toe,instep,gusset,turn,cuff]
     print("\n----Pattern Directions------")
-    for s in pattern_list:
+    for s in sock.pattern_sections:
     #A PatternSection only writes its directions when prompted
         s.write_directions()
         print("\n"+s.label())
