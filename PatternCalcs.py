@@ -614,18 +614,9 @@ class Guage(namedtuple('Guage',['s_per_unit','r_per_unit','units'])):
 class SockPatternSections(namedtuple('PatternSections',['toe','instep','gusset','heel','leg','cuff'])):
     __slots__=()
 
-class ToeUpSockPattern():
+class SockPattern():
     """
-    Basic toe up sock pattern class.
-    Members
-    guage: Guage object holding stitches/unit and rows/unit and units of pattern
-    stitches:SockStitches object holding all the vital measurements
-    foot_measurements: FootMeasure object with foot measurements
-    pattern_sections: Sock pattern sections named tuple
-    Methods:
-    calculate_pattern(self): Measurements for pattern sections
-    write_directions: Direct the PatternSections to write their directions
-    print_pattern: Write out the pattern directions to the screen
+    Implementation for measurements needed by any sock pattern.
     """
     def __init__(self,foot_measure_dict,guage,**kwargs):
         if not (isinstance(guage.s_per_unit,tuple) and isinstance(guage.r_per_unit,tuple) and isinstance(guage.units,str)):
@@ -652,6 +643,46 @@ class ToeUpSockPattern():
         End stitches for requested pattern section
         """
         return self.pattern_sections.__getattribute__(which).end_stitches()
+    
+    def write_directions(self):
+        """
+        Populate directions for each pattern section
+        """
+        for s in self.pattern_sections:
+            if s is not None:
+                s.write_directions()
+
+    def print_pattern(self):
+        """
+        Print pattern sections to screen
+        """
+        for s in self.pattern_sections:
+            if s is not None:
+                print(s.print_directions())
+
+    @abstractclassmethod
+    def check_myself(self):
+        pass
+
+    @abstractclassmethod
+    def calculate_pattern(self):
+        pass
+
+class ToeUpSockPattern(SockPattern):
+    """
+    Basic toe up sock pattern class.
+    Members
+    guage: Guage object holding stitches/unit and rows/unit and units of pattern
+    stitches:SockStitches object holding all the vital measurements
+    foot_measurements: FootMeasure object with foot measurements
+    pattern_sections: Sock pattern sections named tuple
+    Methods:
+    calculate_pattern(self): Measurements for pattern sections
+    write_directions: Direct the PatternSections to write their directions
+    print_pattern: Write out the pattern directions to the screen
+    """
+    def __init__(self,foot_measure_dict,guage,**kwargs):
+        super().__init__(foot_measure_dict,guage,**kwargs)
 
     def calculate_pattern(self):
         """
@@ -679,22 +710,6 @@ class ToeUpSockPattern():
         if not heel_finish_correct:
             errors.append("Heel turn finishes with {0} stitches. It should have {1} stitches.".format(self.pattern_sections.heel.end_stitches(),self.stitches.s_around_foot))      
         raise ValueError("\n".join(errors))
-
-    def write_directions(self):
-        """
-        Populate directions for each pattern section
-        """
-        for s in self.pattern_sections:
-            if s is not None:
-                s.write_directions()
-
-    def print_pattern(self):
-        """
-        Print pattern sections to screen
-        """
-        for s in self.pattern_sections:
-            if s is not None:
-                print(s.print_directions())
 
 def main():
     print("Basic Sock Elements")
