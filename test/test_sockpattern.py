@@ -108,4 +108,5 @@ class TestPatternCalculator(unittest.TestCase):
         Cuff begin should be around foot stitches
         """
         self.assertEqual(self.sock.start_stitches('cuff'),self.sock.stitches.s_around_foot)
+        
 if __name__=="__main__": unittest.main()

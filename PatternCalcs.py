@@ -678,8 +678,6 @@ class ToeUpSockPattern(SockPattern):
     pattern_sections: Sock pattern sections named tuple
     Methods:
     calculate_pattern(self): Measurements for pattern sections
-    write_directions: Direct the PatternSections to write their directions
-    print_pattern: Write out the pattern directions to the screen
     """
     def __init__(self,foot_measure_dict,guage,**kwargs):
         super().__init__(foot_measure_dict,guage,**kwargs)
@@ -696,6 +694,9 @@ class ToeUpSockPattern(SockPattern):
         self.pattern_sections=SockPatternSections(toe,instep,gusset,heel_turn,None,cuff)
 
     def check_myself(self):
+        """
+        Make sure the sections of the sock meet up.
+        """
         toe_meets_instep=(self.end_stitches('toe')==self.start_stitches('instep'))
         instep_meets_gusset=(self.end_stitches('instep')==self.start_stitches('gusset'))
         heel_finish_correct=(self.end_stitches('heel')==round(self.stitches.s_around_foot/2)) 
@@ -718,7 +719,7 @@ def main():
     print("Basic Sock Elements")
     foot_measure_dict={'around_foot':(4*2)/0.9,'toe_to_heel':9.5}
     guage=Guage((32,4),(32,4),'in')
-    print("Toe-up sock pattern for a {} foot with a {} Guage.".format(foot_measure_dict.__str__(),guage.__str__()))
+    print("Toe-up sock pattern for a {0} foot with a {1} Guage.".format(foot_measure_dict.__str__(),guage.__str__()))
     sock=ToeUpSockPattern(foot_measure_dict,guage)
     sock.calculate_pattern()
     print("\n----Pattern Directions------")
