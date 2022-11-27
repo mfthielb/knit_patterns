@@ -36,6 +36,15 @@ class TestPatternCalculator(unittest.TestCase):
         Test that ease-adjusted foot measurement is set
         """
         self.assertAlmostEqual(self.sock.foot_measurements.measure_values("around_foot"),0.9*2*4.1)
+    
+    def test_ease_already_adjusted(self):
+        """
+        Make sure ability to set ease=True on create is intact
+        """
+        s=ToeUpSockPattern(self.foot_measure_dict,self.guage,ease=True)
+        self.assertTrue(s.foot_measurements.ease_adjusted)
+        self.assertEqual(s.foot_measurements.measure_values("around_foot"),2*4.1)
+        self.assertEqual(s.foot_measurements.measure_values("toe_to_heel"),9.5)
 
     def test_toe_to_heel_ease(self):
         """

@@ -567,7 +567,7 @@ class FootMeasure(PatternMeasure):
         self.ease_adjusted=True
     
     def __str__(self):
-        return "Measure for a foot that is {0} {2} around and {1} {2} long.".format(self.measure_values("around_foot"),self.measure_values("toe_to_heel"),self.units)
+        return "Foot measurements {0} {2} around and {1} {2} long.".format(self.measure_values("around_foot"),self.measure_values("toe_to_heel"),self.units)
 
     def __repr__(self):
         return "FootMeasure(\{'around_foot'={0},'toe_to_heel'={1}\},units={2},ease={3})".format(self.measure_values("around_foot"),self.measure_values("toe_to_heel"),self.units,self.ease_adjusted)
@@ -710,6 +710,9 @@ class ToeUpSockPattern(SockPattern):
         if not heel_finish_correct:
             errors.append("Heel turn finishes with {0} stitches. It should have {1} stitches.".format(self.pattern_sections.heel.end_stitches(),self.stitches.s_around_foot))      
         raise ValueError("\n".join(errors))
+    
+    def __str__(self):
+        return "Toe-up sock with gusset heel for: {0}.".format(self.foot_measurements)
 
 def main():
     print("Basic Sock Elements")
