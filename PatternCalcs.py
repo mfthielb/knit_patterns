@@ -593,6 +593,7 @@ class Guage(namedtuple('Guage',['s_per_unit','r_per_unit','units'])):
         Guage is set as x stitches per y units.
         """
         return self.s_per_unit[0]/self.s_per_unit[1]*v
+
     def rows(self,v):
         """
         Guage is often set as x rows per y units.
@@ -638,7 +639,9 @@ class ToeUpSockPattern():
         self.calculate_pattern()
 
     def calculate_pattern(self):
-        #sock pattern goes here
+        """
+        Create pattern sections for sock.
+        """
         toe=ToeUpToeML({"start_stitches":self.stitches.toe_start, "end_stitches":self.stitches.s_around_foot,"increase_x_every_y":(4,2)})
         instep=InstepML({"start_stitches":self.stitches.s_around_foot,"end_stitches":self.stitches.s_around_foot,"n_rows":self.stitches.instep_rows})
         gusset=ToeUpGuessetML({"start_stitches":self.stitches.s_around_foot,"end_stitches":self.stitches.gusset_increase+self.stitches.s_around_foot,"increase_x_every_y":(2,2)})
@@ -647,9 +650,15 @@ class ToeUpSockPattern():
         self.pattern_sections=SockPatternSections(toe,instep,gusset,heel_turn,None,cuff)
     
     def write_directions(self):
+        """
+        Populate directions for each pattern section
+        """
         for s in self.pattern_sections:
             s.write_directions()
     def print_pattern(self):
+        """
+        Print pattern sections to screen
+        """
         for s in self.pattern_sections:
             print(s.print_directions())
 
