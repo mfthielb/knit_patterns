@@ -610,6 +610,9 @@ class Guage(namedtuple('Guage',['s_per_unit','r_per_unit','units'])):
     def __repr__(self):
         return "Guage(s_per_unit={0},r_per_unit={1},units={2})".format(self.s_per_unit,self.r_per_unit,self.units)
 
+class SockPatternSections(namedtuple('PatternSections',['toe','instep','gusset','heel','leg','cuff'])):
+    __slots__=()
+
 class ToeUpSockPattern():
     """
     Basic toe up sock pattern class.
@@ -617,7 +620,7 @@ class ToeUpSockPattern():
     guage: Guage object holding stitches/unit and rows/unit and units of pattern
     stitches:SockStitches object holding all the vital measurements
     foot_measurements: FootMeasure object with foot measurements
-    pattern_sections: list object of PatternSections
+    pattern_sections: Sock pattern sections named tuple
     Methods:
     calc_pattern(self): Measurements for pattern sections
     """
@@ -641,7 +644,7 @@ class ToeUpSockPattern():
         gusset=ToeUpGuessetML({"start_stitches":self.stitches.s_around_foot,"end_stitches":self.stitches.gusset_increase+self.stitches.s_around_foot,"increase_x_every_y":(2,2)})
         heel_turn=HeelTurnML({"start_stitches":self.stitches.toe_start+self.stitches.gusset_increase,"end_stitches":(self.stitches.toe_start)})
         cuff=BasicCuff({"start_stitches":self.stitches.s_around_foot,"end_stitches":self.stitches.s_around_foot,"n_rows":self.stitches.r_per_inch})
-        self.pattern_sections=(toe,instep,gusset,heel_turn,cuff)
+        self.pattern_sections=SockPatternSections(toe,instep,gusset,heel_turn,None,cuff)
     
     def write_directions(self):
         for s in self.pattern_sections:
