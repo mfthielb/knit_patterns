@@ -1,4 +1,6 @@
 from abc import abstractclassmethod
+from measurement.measures import Distance
+from collections import namedtuple
 """
 Basic classes for PatternMeasure's and PatternSections
 """
@@ -16,7 +18,7 @@ class PatternMeasure:
         Fill _measure_values dictionary and make sure we have all the measurements the user told us we needed.
         """
         if all_measures is not None:
-            self.all_measures(all_measures)
+            self.all_measures(set(all_measures+vital_measures))
         else:
             self._all_measures=set()
         self._measure_values={}
@@ -67,26 +69,6 @@ class PatternMeasure:
                     raise TypeError(f"Value {i} is not a string. Cannot be a measure name.")
                 self.all_measures(self.all_measures().remove(i))
     
-    def edit_vital_measures(self,va=set(),vrm=set()):
-        """
-        Add/remove a single string or an iterable that can be made into a set to/from _vital_measures
-        """
-        if isinstance(va,str):
-            self.vital_measures(self.vital_measures().add(va))
-        else:
-            for i in set(va):
-                if not isinstance(i,str):
-                    raise ValueError(f"Value {i} is not a string. Cannot be a measure name.")
-                self.vital_measures(self.vital_measures().add(i))
-                self.all_measures(self.all_measures().add(i))
-        if isinstance(vrm,str):
-            self.vital_measures(self.vital_measures().remove(vrm))
-        else:
-            for i in set(vrm):
-                if not isinstance(i,str):
-                    raise TypeError(f"Value {i} is not a string. Cannot be a measure name.")
-                self.vital_measures(self.vital_measures().remove(i))
-
     def vital_measures(self,v=None):
         if v is not None:
             if isinstance(v,str):
@@ -120,7 +102,7 @@ class PatternMeasure:
             self._measure_values[key]=value
             self.edit_measures(va=key)
         if key in self._measure_values.keys():
-            return self._measure_values[key]
+            return self._measure_values.get(key)
         else:
             raise ValueError(f"Key {key} not in measure_values dictionary")
 
@@ -250,16 +232,14 @@ class PatternSection:
     _directions (list): Directions for the pattern section in proper order. 
     """
 
-    def __init__(self,vital_measures,all_measures,measures_dict,*args,label="",**kwargs):
+    def __init__(self,measures_dict,*args,label="",**kwargs):
         """
         Initialize PatternMeasure and set label for Pattern Section
-        vital_measures (list of str): Measurements that must be input by the calling function
-        all_measures (list of str): All the measurements needed for the section, including those that are calculated
         measures_dict (dict str:int): A dictionary holding input measurements
         """
         self._directions=[]
         self._label=label
-        self.make_measure(vital_measures,all_measures,measures_dict)
+        self.make_measure(measures_dict)
 
     def label(self,text=None):
         "Set or get the label for this section"
@@ -275,7 +255,7 @@ class PatternSection:
         pass
 
     @abstractclassmethod
-    def make_measure(self,vital_measures,all_measures,measures_dict):
+    def make_measure(self,measures_dict):
         """
         A pattern section requires a measure object. This method creates that object.
         """
@@ -287,7 +267,12 @@ class PatternSection:
         How to fill the directions list
         """
         pass
-
+    
+    @abstractclassmethod
+    def end_stitches(self):
+        """
+        Calculate how many stitches you have at the end and return.
+        """
     def print_directions(self):
         """
         Basic print method to print all directions in _directions (a list)
@@ -295,18 +280,38 @@ class PatternSection:
         for d in self._directions:
             print(d)
 
-class ToeUpToeML(PatternSection):
+class IncOrDecPatternSection(PatternSection):
+    """
+    Generic class method of an increasing or decreasing PatternSection
+    """
+    def __init__(self,measures_dict,label=""):
+        super().__init__(measures_dict,label=label)
+
+    def start_stitches(self):
+        return self._measurements.measure_values("start_stitches")
+
+    def end_stitches(self):
+        return self._measurements.measure_values("end_stitches")
+
+    def n_rows(self):
+        return self._measurements.measure_values("n_rows")    
+
+    def __str__(self):
+        start=self._measurements.start_stitches()
+        end=self._measurements.end_stitches()
+        l=self.label()
+        return f"{l} for magic loop toe-up {start} stitches inc to {end} stitches."
+
+class ToeUpToeML(IncOrDecPatternSection):
     """
     A Toe section for a basic toe-up sock using magic loop
     """
     def __init__(self,measures_dict,label=""):
-        super().__init__(None,None,measures_dict,label=label)
-        if len(self.label())==0:
-            self.label("Toe")
+        super().__init__(measures_dict,label=label)
     
     #TODO: We know increase_x_every_y for a toe, so check the input dictionary
     #Add increase_x_every_y=(4,2) and make sure you're adding a multiple of 4
-    def make_measure(self,vital_measures,all_measures,measures_dict):
+    def make_measure(self,measures_dict):
         """
         Toes are usually increase 4 every 2 rows. Use defaults if missiing some measures. start_stitches to end_stitches. 
         """
@@ -349,26 +354,21 @@ class ToeUpToeML(PatternSection):
         self._directions.append(self.how_to_end())
         self._directions.append("You will have knitted {0} rows.".format(self._measurements.n_rows()))
     
-    def __str__(self):
-        start=self._measurements.start_stitches()
-        end=self._measurements.end_stitches()
-        return f"Toe for magic loop toe-up {start} stitches inc to {end} stitches."
-    
     def __repr__(self):
         start=self._measurements.start_stitches()
         end=self._measurements.end_stitches()
         return f"ToeUpToeML({{'start_stitches':{start},'end_stitches':{end},'increase_x_every_y':(4,2)}})."
 
-class InstepML(PatternSection):
+class InstepML(IncOrDecPatternSection):
     """
     Directions for the instep of a sock. Toe up or cuff down, the directions are the same
     """
-    def __init__(self,measures_dict):
-        super().__init__(None,None,measures_dict)
+    def __init__(self,measures_dict,label=""):
+        super().__init__(measures_dict,label=label)
         if len(self.label())==0:
             self.label("Instep")
 
-    def make_measure(self,vital_measures,all_measures,measures_dict):
+    def make_measure(self,measures_dict):
         """
         Use an IncOrDecPatternMeasure with a 0 increase.
         """
@@ -387,7 +387,7 @@ class InstepML(PatternSection):
         Gusset is just one line of directions.
         """
         self._directions.append(self.how_to_end())
-    
+
     def __str__(self):
         start=self._measurements.start_stitches()
         rows=self._measurements.n_rows()
@@ -398,20 +398,20 @@ class InstepML(PatternSection):
         end=self._measurements.n_rows()
         return f"InstepML({{'start_stitches':{start},'n_rows':{end},'increase_x_every_y':(0,1)}})."
     
-class ToeUpGuessetML(PatternSection):
+class ToeUpGuessetML(IncOrDecPatternSection):
     """
     A basic guesset section for a toe-up sock using magic loop
     Attributes: 
     _measurements: An IncOrDecPatternMeasure with a positive increase
     _directions: written directions
     """
-    def __init__(self,measures_dict):
-        super().__init__(None,None,measures_dict)
+    def __init__(self,measures_dict,label=""):
+        super().__init__(measures_dict,label=label)
         if len(self.label())==0:
             self.label("Gusset")
-        self.make_measure(None,None,measures_dict)
+        self.make_measure(measures_dict)
 
-    def make_measure(self,vital_measures,all_measures,measures_dict):
+    def make_measure(self,measures_dict):
         """
         A guesset is an increase, but you only increase on a single needle.
         vital_measures: not used
@@ -454,29 +454,28 @@ class ToeUpGuessetML(PatternSection):
         end=self._measurements.end_stitches()
         return f"ToeUpGussetML({{'start_stitches':{start},'end_stitches':{end},'increase_x_every_y':(1,1)}})."
 
-class HeelTurnML(PatternSection):
+class HeelTurnML(IncOrDecPatternSection):
     """
     Heel turn with magic loop.
     """
     def __init__(self,measures_dict,label="",*args,**kwargs):
-        measures_for_initial=measures_dict
         if "increase_x_every_y" not in measures_dict.keys():
             new_measures=measures_dict.copy()
             new_measures["increase_x_every_y"]=(-1,1)
-            super().__init__(["start_stitches","end_stitches","increase_x_every_y"],["start_stitches","end_stitches","increase_x_every_y","first_turn","second_turn"],new_measures)
+            super().__init__(new_measures,label=label)
         else:
-            super().__init__(["start_stitches","end_stitches","increase_x_every_y"],["start_stitches","end_stitches","increase_x_every_y","first_turn","second_turn"],new_measures)
+            super().__init__(measures_dict,label,label)
         if len(self.label())==0:
             self.label("Heel Turn")
         self.fill_in_missing_measures()
 
-    def make_measure(self,vital_measures,all_measures,measures_dict):
+    def make_measure(self,measures_dict):
         self._measurements=IncOrDecPatternMeasure(measures_dict)
 
     def _calc_first_turn(self):
         if not self._measurements.have_what_i_need(["start_stitches"]):
             raise ValueError("start_stitches not in measures dictionary.")
-        self._measurements.measure_values("first_turn",self._measurements.measure_values("start_stitches")-1)
+        self._measurements.measure_values("first_turn",value=self.start_stitches()-1)
     
     def _calc_second_turn(self):
         """
@@ -510,8 +509,8 @@ class HeelTurnML(PatternSection):
         self._directions.append("Knit 1 row around.\n")
     
     def __str__(self):
-        start=self._measurements.start_stitches()
-        end=self._measurements.end_stitches()
+        start=self.start_stitches()
+        end=self.end_stitches()
         return f"Heel turn for magic loop toe-up {start} stitches inc to {end} stitches."
     
     def __repr__(self):
@@ -519,14 +518,14 @@ class HeelTurnML(PatternSection):
         end=self._measurements.end_stitches()
         return f"HeelTurnML({{'start_stitches':{start},'end_stitches':{end},'increase_x_every_y':(-1,1)}})."
 
-class BasicCuff(PatternSection):
-    def __init__(self,measures_dict):
-        super().__init__(None,None,measures_dict,label="",)
-        if len(self.label)==0:
+class BasicCuff(IncOrDecPatternSection):
+    def __init__(self,measures_dict,label=""):
+        super().__init__(measures_dict,label=label)
+        if len(self.label())==0:
             self.label("Cuff")
     
-    def make_measure(self,vital_measures,all_measures,measures_dict):
-        self._measurements=PatternMeasure(["start_stitches","n_rows"],[],measures_dict)
+    def make_measure(self,measures_dict):
+        self._measurements=IncOrDecPatternMeasure(measures_dict)
     
     def write_directions(self):
         self._directions.append("Row 1: K1, P1 for all {0} around".format(self._measurements.measure_values("start_stitches")))
@@ -534,39 +533,198 @@ class BasicCuff(PatternSection):
         self._directions.append("Bind off LOOSELY (or you won't be able to get the sock onto your foot).")
     
     def __str__(self):
-        return "Cuff {0} stitches for {1} rows".format(self._measurements.start_stitches(),self._measurements.n_rows())
+        return "Cuff {0} stitches for {1} rows".format(self.start_stitches(),self.n_rows())
     
     def __repr__(self):
-        return "Cuff({'start_stitches':{0},'end_stitches':{0},n_rows: {1})".format(self._measurements.start_stitches(),self._measurements.n_rows())
+        return "Cuff({'start_stitches':{0},'end_stitches':{0},n_rows: {1})".format(self.start_stitches(),self.n_rows())
+
+class FootMeasure(PatternMeasure):
+    """
+    A measurement class to hold physical measurements for a foot.
+    Members
+    units: 'in' or 'cm' ('in' by default)
+    ease_adjusted: Socks have 10% or 1-1.5 inches negative ease. bool for whether foot measurements have been ease adjusted. 
+    """
+    def __init__(self,measure_dict,units='in',ease=False):
+        super().__init__(["around_foot","toe_to_heel"],None,measure_dict)
+        if units in ['cm', 'in']:
+            self.units=units
+        else:
+            #TODO; Implement the ability to guess inches or cm based on measurements
+            raise Warning(f"Invalid units for foot measure, valid units are 'in' or 'cm'. Units given are {units}.")
+        self.ease_adjusted=ease
+        #TODO: Implement the ability to guess sock size based on shoe size and shoe size based on sock size
+        self.calc_ease()
+        if not self.have_what_i_need(['around_foot','toe_to_heel']):
+            raise Warning("Foot measure initialized without all needed measurements. Need: {0}. Initialized with: {1}").format(self.what_do_i_have(),self.vital_measures())
+    
+    def calc_ease(self):
+        if self.ease_adjusted:
+            print("Measurements already ease adjusted: "+self.__str__())
+            return
+        self.measure_values("around_foot",value=(self.measure_values("around_foot")*0.9))
+        self.measure_values("toe_to_heel",value=(self.measure_values("toe_to_heel")*0.9))
+        self.ease_adjusted=True
     
     def __str__(self):
-        start=self._measurements.measure_values("start_stitches")
-        rows=self._measurements.measure_values("n_rows")
-        return f"Generic cuff for sock that is {start} stitches around and {rows} long."
-    
+        return "Foot measurements {0} {2} around and {1} {2} long.".format(self.measure_values("around_foot"),self.measure_values("toe_to_heel"),self.units)
+
     def __repr__(self):
-        start=self._measurements.measure_values("start_stitches")
-        rows=self._measurements.measure_values("n_rows")
-        return f"BasicCuff({{'start_stitches':{start},'n_rows':{rows},'increase_x_every_y':(0,1)}})."
+        return "FootMeasure(\{'around_foot'={0},'toe_to_heel'={1}\},units={2},ease={3})".format(self.measure_values("around_foot"),self.measure_values("toe_to_heel"),self.units,self.ease_adjusted)
+
+class SockStitches(namedtuple('PatternStitches',['s_around_foot','r_toe_to_heel','r_per_inch'])):
+    @property
+    def toe_start(self):
+        return round(self.s_around_foot/2)
+    @property
+    def toe_rows(self):
+        return round(self.s_around_foot/2)
+    @property
+    def instep_rows(self):
+        return self.r_toe_to_heel-self.toe_rows-self.r_per_inch*2
+    @property
+    def gusset_increase(self):
+        return self.s_around_foot/4
+    
+class Guage(namedtuple('Guage',['s_per_unit','r_per_unit','units'])):
+    __slots__=()
+    def stitches(self,v):
+        """
+        Guage is set as x stitches per y units.
+        """
+        return self.s_per_unit[0]/self.s_per_unit[1]*v
+
+    def rows(self,v):
+        """
+        Guage is often set as x rows per y units.
+        """
+        return self.r_per_unit[0]/self.r_per_unit[1]*v
+        
+    def units_to_rows(self,v,units=None):
+        return self.r_per_unit[1]/self.r_per_unit[0]*v
+        
+    def units_to_stitches(self,v):
+        return self.s_per_unit[1]/self.s_per_unit[0]*v
+
+    def __str__(self):
+        return "Guage is: {0}, stitches per {2} and {1} rows per {2}.".format(self.s_per_unit,self.r_per_unit,self.units)
+    def __repr__(self):
+        return "Guage(s_per_unit={0},r_per_unit={1},units={2})".format(self.s_per_unit,self.r_per_unit,self.units)
+
+class SockPatternSections(namedtuple('PatternSections',['toe','instep','gusset','heel','leg','cuff'])):
+    __slots__=()
+
+class SockPattern():
+    """
+    Implementation for measurements needed by any sock pattern.
+    """
+    def __init__(self,foot_measure_dict,guage,**kwargs):
+        if not (isinstance(guage.s_per_unit,tuple) and isinstance(guage.r_per_unit,tuple) and isinstance(guage.units,str)):
+            raise ValueError("Guage should be Guage((int,int),(int,int),units). Guage entered is {0}".format(guage.__repr__()))
+        self.guage=guage
+        self.foot_measurements=FootMeasure(foot_measure_dict,units=guage.units,**kwargs)
+        foot_stitches=guage.stitches(self.foot_measurements.measure_values('around_foot'))
+        total_foot_rows=guage.rows(self.foot_measurements.measure_values('toe_to_heel'))
+        r_per_unit=round(guage.r_per_unit[0]/guage.r_per_unit[1])
+        if not (guage.units=='in'):
+            r_per_unit=round(r_per_unit*2.54) 
+        self.stitches=SockStitches(foot_stitches,total_foot_rows,r_per_unit)
+        self.calculate_pattern()
+        self.check_myself()
+
+    def start_stitches(self,which):
+        """
+        Start stitches for requested pattern section
+        """
+        return self.pattern_sections.__getattribute__(which).start_stitches()
+
+    def end_stitches(self,which):
+        """
+        End stitches for requested pattern section
+        """
+        return self.pattern_sections.__getattribute__(which).end_stitches()
+    
+    def write_directions(self):
+        """
+        Populate directions for each pattern section
+        """
+        for s in self.pattern_sections:
+            if s is not None:
+                s.write_directions()
+
+    def print_pattern(self):
+        """
+        Print pattern sections to screen
+        """
+        for s in self.pattern_sections:
+            if s is not None:
+                print(s.print_directions())
+
+    @abstractclassmethod
+    def check_myself(self):
+        pass
+
+    @abstractclassmethod
+    def calculate_pattern(self):
+        pass
+
+class ToeUpSockPattern(SockPattern):
+    """
+    Basic toe up sock pattern class.
+    Members
+    guage: Guage object holding stitches/unit and rows/unit and units of pattern
+    stitches:SockStitches object holding all the vital measurements
+    foot_measurements: FootMeasure object with foot measurements
+    pattern_sections: Sock pattern sections named tuple
+    Methods:
+    calculate_pattern(self): Measurements for pattern sections
+    """
+    def __init__(self,foot_measure_dict,guage,**kwargs):
+        super().__init__(foot_measure_dict,guage,**kwargs)
+
+    def calculate_pattern(self):
+        """
+        Create pattern sections for sock.
+        """
+        toe=ToeUpToeML({"start_stitches":self.stitches.toe_start, "end_stitches":self.stitches.s_around_foot,"increase_x_every_y":(4,2)})
+        instep=InstepML({"start_stitches":self.stitches.s_around_foot,"end_stitches":self.stitches.s_around_foot,"n_rows":self.stitches.instep_rows})
+        gusset=ToeUpGuessetML({"start_stitches":self.stitches.s_around_foot,"end_stitches":self.stitches.gusset_increase+self.stitches.s_around_foot,"increase_x_every_y":(2,2)})
+        heel_turn=HeelTurnML({"start_stitches":self.stitches.toe_start+self.stitches.gusset_increase,"end_stitches":(self.stitches.toe_start)})
+        cuff=BasicCuff({"start_stitches":self.stitches.s_around_foot,"end_stitches":self.stitches.s_around_foot,"n_rows":self.stitches.r_per_inch})
+        self.pattern_sections=SockPatternSections(toe,instep,gusset,heel_turn,None,cuff)
+
+    def check_myself(self):
+        """
+        Make sure the sections of the sock meet up.
+        """
+        toe_meets_instep=(self.end_stitches('toe')==self.start_stitches('instep'))
+        instep_meets_gusset=(self.end_stitches('instep')==self.start_stitches('gusset'))
+        heel_finish_correct=(self.end_stitches('heel')==round(self.stitches.s_around_foot/2)) 
+        if toe_meets_instep and instep_meets_gusset and heel_finish_correct:
+            print("Congratulations! Your sock has no holes")
+            return
+        errors=[]
+        if not toe_meets_instep:
+            errors.append("Toe and instep won't meet: Toe ends with {0} stitches. Instep begins with {1}".format(self.pattern_sections.toe.end_stitches(),self.pattern_sections.instep.start_stitches()))
+        if not instep_meets_gusset:
+            errors.append("Instep and Gueest won't meet: Instep ends with {0}. Gusset starts with: {1}.",self.pattern_sections.instep.end_stitches(),self.pattern_sections.gusset.start_stitches())
+        if not heel_finish_correct:
+            errors.append("Heel turn finishes with {0} stitches. It should have {1} stitches.".format(self.pattern_sections.heel.end_stitches(),self.stitches.s_around_foot))      
+        raise ValueError("\n".join(errors))
+    
+    def __str__(self):
+        return "Toe-up sock with gusset heel for: {0}.".format(self.foot_measurements)
 
 def main():
     print("Basic Sock Elements")
-    #In the finished product, there would be a SockCalculator that takes in the 
-    #measurements for the foot (in inches or cm) and calculates the stitches for each of these calls
-    toe=ToeUpToeML({"start_stitches":32,"end_stitches":64,"increase_x_every_y":(4,2)})
-    instep=InstepML({"start_stitches":64,"end_stitches":64,"n_rows":24})
-    gusset=ToeUpGuessetML({"start_stitches":64,"end_stitches":88,"increase_x_every_y":(2,2)})
-    turn=HeelTurnML({"start_stitches":56,"end_stitches":32})
-    cuff=BasicCuff({"start_stitches":64,"n_rows":12})
-
-    #Each object makes its calculations on create. 
-    pattern_list=[toe,instep,gusset,turn,cuff]
-    # #Print directions to screen
+    foot_measure_dict={'around_foot':(4*2)/0.9,'toe_to_heel':9.5}
+    guage=Guage((32,4),(32,4),'in')
+    print("Toe-up sock pattern for a {0} foot with a {1} Guage.".format(foot_measure_dict.__str__(),guage.__str__()))
+    sock=ToeUpSockPattern(foot_measure_dict,guage)
+    sock.calculate_pattern()
     print("\n----Pattern Directions------")
-    for s in pattern_list:
-    #A PatternSection only writes its directions when prompted
-        s.write_directions()
-        print("\n"+s.label())
-        s.print_directions()
-
+    print(sock)
+    sock.write_directions()
+    sock.print_pattern()
+    
 if __name__=="__main__": main()

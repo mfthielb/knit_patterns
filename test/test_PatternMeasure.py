@@ -29,14 +29,5 @@ class TestPatternMeasure(unittest.TestCase):
             m.measure_values("n_rows",6)
             self.assertTrue(m.have_what_i_need())
 
-    def test_setting_measures(self):
-        m=PatternMeasure(None,None,{"start_stitches":2,"end_stitches":12})
-        m.edit_vital_measures(va="n_rows")
-        self.assertEqual(m.vital_measures(),set(["n_rows"]))
-        m.vital_measures("n_rows")
-        self.assertEqual(m.vital_measures(),set(["n_rows"]))
-        m.vital_measures({"start_stitches","end_stitches"})
-        self.assertEqual(m.vital_measures(),{"start_stitches","end_stitches"})
-
 if __name__=="__main__": 
     unittest.main()
