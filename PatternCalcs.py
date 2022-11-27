@@ -623,7 +623,9 @@ class ToeUpSockPattern():
     foot_measurements: FootMeasure object with foot measurements
     pattern_sections: Sock pattern sections named tuple
     Methods:
-    calc_pattern(self): Measurements for pattern sections
+    calculate_pattern(self): Measurements for pattern sections
+    write_directions: Direct the PatternSections to write their directions
+    print_pattern: Write out the pattern directions to the screen
     """
     def __init__(self,foot_measure_dict,guage,**kwargs):
         if not (isinstance(guage.s_per_unit,tuple) and isinstance(guage.r_per_unit,tuple) and isinstance(guage.units,str)):
@@ -637,6 +639,19 @@ class ToeUpSockPattern():
             r_per_unit=round(r_per_unit*2.54) 
         self.stitches=SockStitches(foot_stitches,total_foot_rows,r_per_unit)
         self.calculate_pattern()
+        self.check_myself()
+
+    def start_stitches(self,which):
+        """
+        Start stitches for requested pattern section
+        """
+        return self.pattern_sections.__getattribute__(which).start_stitches()
+
+    def end_stitches(self,which):
+        """
+        End stitches for requested pattern section
+        """
+        return self.pattern_sections.__getattribute__(which).end_stitches()
 
     def calculate_pattern(self):
         """
@@ -648,31 +663,49 @@ class ToeUpSockPattern():
         heel_turn=HeelTurnML({"start_stitches":self.stitches.toe_start+self.stitches.gusset_increase,"end_stitches":(self.stitches.toe_start)})
         cuff=BasicCuff({"start_stitches":self.stitches.s_around_foot,"end_stitches":self.stitches.s_around_foot,"n_rows":self.stitches.r_per_inch})
         self.pattern_sections=SockPatternSections(toe,instep,gusset,heel_turn,None,cuff)
-    
+
+    def check_myself(self):
+        toe_meets_instep=(self.end_stitches('toe')==self.start_stitches('instep'))
+        instep_meets_gusset=(self.end_stitches('instep')==self.start_stitches('gusset'))
+        heel_finish_correct=(self.end_stitches('heel')==round(self.stitches.s_around_foot/2)) 
+        if toe_meets_instep and instep_meets_gusset and heel_finish_correct:
+            print("Congratulations! Your sock has no holes")
+            return
+        errors=[]
+        if not toe_meets_instep:
+            errors.append("Toe and instep won't meet: Toe ends with {0} stitches. Instep begins with {1}".format(self.pattern_sections.toe.end_stitches(),self.pattern_sections.instep.start_stitches()))
+        if not instep_meets_gusset:
+            errors.append("Instep and Gueest won't meet: Instep ends with {0}. Gusset starts with: {1}.",self.pattern_sections.instep.end_stitches(),self.pattern_sections.gusset.start_stitches())
+        if not heel_finish_correct:
+            errors.append("Heel turn finishes with {0} stitches. It should have {1} stitches.".format(self.pattern_sections.heel.end_stitches(),self.stitches.s_around_foot))      
+        raise ValueError("\n".join(errors))
+
     def write_directions(self):
         """
         Populate directions for each pattern section
         """
         for s in self.pattern_sections:
-            s.write_directions()
+            if s is not None:
+                s.write_directions()
+
     def print_pattern(self):
         """
         Print pattern sections to screen
         """
         for s in self.pattern_sections:
-            print(s.print_directions())
+            if s is not None:
+                print(s.print_directions())
 
 def main():
     print("Basic Sock Elements")
     foot_measure_dict={'around_foot':(4*2)/0.9,'toe_to_heel':9.5}
     guage=Guage((32,4),(32,4),'in')
+    print("Toe-up sock pattern for a {} foot with a {} Guage.".format(foot_measure_dict.__str__(),guage.__str__()))
     sock=ToeUpSockPattern(foot_measure_dict,guage)
     sock.calculate_pattern()
     print("\n----Pattern Directions------")
-    for s in sock.pattern_sections:
-    #A PatternSection only writes its directions when prompted
-        s.write_directions()
-        print("\n"+s.label())
-        s.print_directions()
+    print(sock)
+    sock.write_directions()
+    sock.print_pattern()
     
 if __name__=="__main__": main()

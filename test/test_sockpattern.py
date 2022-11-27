@@ -61,41 +61,42 @@ class TestPatternCalculator(unittest.TestCase):
         """
         expected_types=[ToeUpToeML,InstepML,ToeUpGuessetML,HeelTurnML,None,BasicCuff]
         for p,e in zip(self.sock.pattern_sections,expected_types):
-            self.assertIsInstance(p,e)
+            if e is not None:
+                self.assertIsInstance(p,e)
 
     def test_toe_meets_instep(self):
         """
         End stitches for toe should match begin stitches for instep
         """
-        self.assertEqual(self.sock.pattern_sections.toe.end_stitches(),self.sock.pattern_sections.instep.start_stitches())
+        self.assertEqual(self.sock.end_stitches('toe'),self.sock.start_stitches('instep'))
 
     def test_instep_meets_gusset(self):
         """
         Begin stitches for gusset should match end stitches for instep
         """
-        self.assertEqual(self.sock.pattern_sections.instep.end_stitches(),self.sock.pattern_sections.gusset.start_stitches())
+        self.assertEqual(self.sock.end_stitches('instep'),self.sock.start_stitches('gusset'))
 
     def test_gusset_end(self):
         """
         End stitches for gusset should be number of stitches around foot +25% 
         """
-        self.assertAlmostEqual(self.sock.pattern_sections.gusset.end_stitches(),self.sock.stitches.s_around_foot*(1.25))
+        self.assertAlmostEqual(self.sock.end_stitches('gusset'),self.sock.stitches.s_around_foot*(1.25))
 
     def test_heel_start(self):
         """
         Heel turn starting stitches is half the stitches around + the added stitches for the gusset
         """
-        self.assertEqual(round(self.sock.pattern_sections.heel.start_stitches()),round(self.sock.stitches.s_around_foot/2+self.sock.stitches.s_around_foot/4))
+        self.assertEqual(round(self.sock.start_stitches('heel')),round(self.sock.stitches.s_around_foot/2+self.sock.stitches.s_around_foot/4))
 
     def test_heel_end(self):
         """
         Heel turn ending stitches should be back to the number of stitches around the foot.
         """
-        self.assertEqual(round(self.sock.pattern_sections.heel.end_stitches()),round(self.sock.stitches.s_around_foot/2))
+        self.assertEqual(round(self.sock.end_stitches('heel')),round(self.sock.stitches.s_around_foot/2))
 
     def test_heel_meets_cuff(self):
         """
         Cuff begin should be around foot stitches
         """
-        self.assertEqual(self.sock.pattern_sections.cuff.start_stitches(),self.sock.stitches.s_around_foot)
+        self.assertEqual(self.sock.start_stitches('cuff'),self.sock.stitches.s_around_foot)
 if __name__=="__main__": unittest.main()
