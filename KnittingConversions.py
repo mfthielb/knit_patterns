@@ -152,7 +152,7 @@ class StandardGuage():
     6:range(7,11),7:range(1,6)}
     _recommended_needle={0:[1.5,1.75,2.00,2.25],
         1:[2.25,2.5,3.0,3.25],
-        2:[3.25,3.0,3.5,3.75],
+        2:[3.0,3.25,3.5,3.75],
         3:[3.75,4.0,4.25,4.5],
         4:[4.5,5.0,5.5],
         5:[5.5,6.0,6.5,7.0,7.5],
@@ -192,13 +192,13 @@ class StandardGuage():
         #Assume we're in the middle of the standard stitch range. 
         #Move up or down depending on which needle and knitter type we have
         needle_pos=needle_list.index(needle_size)/len(needle_list)
-        s_pos=(knitter-(needle_pos-0.5))*len(stitch_list)
+        s_pos=((knitter+(1-needle_pos))/2)
         if s_pos<=0:
             return min(stitch_list)
         elif s_pos>=1:
             return max(stitch_list)
         else:
-             return needle_list[floor(s_pos*len(needle_list))]
+             return stitch_list[floor(s_pos*len(stitch_list))]
     
     def guess_guage(self,yarn_weight,units='in',needle_size=None,knitter=0.5):
         s_per_4_inch=self._guess_s_per_4(yarn_weight,needle_size,knitter)
