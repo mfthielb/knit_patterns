@@ -6,7 +6,6 @@ from unicodedata import ucd_3_2_0
 from math import floor
 from measurement.base import MeasureBase
 from collections import namedtuple
-from PatternCalcs import PatternMeasure
 
 class YarnWeight(Enum):
     """
@@ -20,27 +19,6 @@ class YarnWeight(Enum):
     BULKY=5
     SUPERBULKY=6
     JUMBO=7
-
-class KnitterType():
-    """
-    Returns value of -1,0,1. Prints as a kitter type
-    """
-    V_TO_S={-1:"loose",0:"average",1:"tight"}
-    S_TO_V={v:k for k,v in V_TO_S.items()}
-    def __init__(self,value):
-        if isinstance(value,int):
-            self.value=value 
-            self.name=self.V_TO_S.get(value)
-            if self.name is None:
-                raise Warning("Value given is {0}. Must be one of {1} or one of ['loose','average','tight']".format(self.V_TO_S.keys()))
-        elif isinstance(value,str):
-            self.name=value.lower()
-            self.value=S_TO_V.get(self.name)
-            if self.value is None:
-                raise ValueError(f"Value given is {value}. Must be -1,0,1 or {V_TO_S.keys()}")
-
-    def __str__(self):
-        return self.name
 
 class NeedleConversion:
     """
@@ -128,87 +106,60 @@ class NeedleConversion:
                 return size
         else: 
             raise ValueError(f"No close needle of size {mm} mms in {units}.")
-
-class Guage:
-    """
-    Keep track of stitches per inch/cm. Provides an interface where user can input guage naturally and system converts to needed units.  
-    needle_size
-    yarn_weight
-    stitches_per_inch
-    stitches_per_cm
-    rows_per_inch
-    rows_per_cm
-    """
-    def __init__(self,s,r,needle_size, yarn_weight,needle_units='mm',units='in',**kwargs):
-        self._units=units
-        self._needle_size=needle_size
-        self._yarn_weight=yarn_weight
-        self._needle_units=needle_units
-        if not isinstance(s,tuple) or not isinstance(r,tuple):
-            print("Rows given as a {0}. Stitches given as a {1}".format(type(r),type(s)))
-            raise TypeError(f"Stitches per {units}. Must be a tuple of the form (n_stitches,n_{units}.")
-        if units=='in':
-            self.stitches_per_inch=s[0]/s[1]
-            self.stitches_per_cm=s[0]/(s[1]*2.54)
-            self.rows_per_inch=r[0]/r[1]
-            self.rows_per_cm=r[0]/(r[1]*2.54)
-        elif units=='cm':
-            self.stitches_per_cm=s[0]/s[1]
-            self.stitches_per_inch=s[0]*2.54/s[1]            
-            self.rows_per_cm=r[0]/r[1]
-            self.rows_per_inch=r[0]*2.54/r[1]
-        else:
-            raise ValueError("Unknown units: {0}".format(units))
-        
-    def get(self,what,units=None):
-        if units==None:
-            units=self._units
-        if units not in ('in','cm'):
-            raise TypeError(f"Units must be 'cm' or 'in'. Units given: {units}")
-        if what not in ('s','r'):
-            raise TypeError(f"You asked for {what}. Can only tell you n-stitches ('s') or n-rows ('r').")
-        if units=='in':
-            if what=='r':
-                return self.rows_per_inch
-            elif what=='s':
-                return self.stitches_per_inch
-        elif units=='cm':
-            if what=='s':
-                return self.stitches_per_cm
-            elif what=='r':
-                return self.rows_per_cm
-    def __str__(self):
-        return "Measured gugage for {2} weight yarn, US size {1} needle:{3} stitches per {0} and {4} rows per {0}.".format(self._units,self._needle_size,self._yarn_weight,self.get('s'),self.get('s'))
     
+class Guage(namedtuple('Guage',['s_per_unit','r_per_unit','units'])):
+    """
+    An object to keep track of knitters guage and calculate stitches/rows for a given units input.
+    """
+    __slots__=()
+    def stitches(self,v):
+        """
+        Guage is set as x stitches per y units.
+        """
+        return self.s_per_unit[0]/self.s_per_unit[1]*v
+
+    def rows(self,v):
+        """
+        Guage is often set as x rows per y units.
+        """
+        return self.r_per_unit[0]/self.r_per_unit[1]*v
+        
+    def units_to_rows(self,v):
+        """
+        Given inches or cm, return number of rows
+        """
+        return self.r_per_unit[1]/self.r_per_unit[0]*v
+        
+    def units_to_stitches(self,v):
+        """
+        Given inches or cm, return number of stitches
+        """
+        return self.s_per_unit[1]/self.s_per_unit[0]*v
+
+    def __str__(self):
+        return "Guage is: {0}, stitches per {2} and {1} rows per {2}.".format(self.s_per_unit.__str__(),self.r_per_unit.__str__(),self.units)
     def __repr__(self):
-        return "Guage(({0},1),({1},1),{2},{3},units='{4}')".format(self.get('s'),self.get('r'),self._yarn_weight,self._needle_size,self._units)
+        return "Guage(s_per_unit={0},r_per_unit={1},units={2})".format(self.s_per_unit.__repr__(),self.r_per_unit.__repr__(),self.units)
 
-class StandardGuage(Guage):
+class StandardGuage():
     """
-    Create an inherited class that has the ability to guess a guage based on needle size and yarn weight.
+    Class that knows standard guages for yarn weights and needle sizes.
+    Has the ability to guess stockingette guage given yarn weight and either needle size or knitter type (0,1)
     """
-    def __init__(self,yarn_weight,knitter=0,**kwargs):
-        #Standard n_stitches per 4 inches according to craft yarn council.org
-        self._knitter_type=KnitterType(knitter)
-        self._stitches_per_4_inches={0:range(33,40),1:range(27,32),
-            2:range(23,26),3:range(21,24),4:range(16,20),5:range(12,15),
-            6:range(7,11),7:range(1,6)}
-        self._recommended_needle={0:[1.5,1.75,2.00,2.25],
-            1:[2.25,2.5,3.0,3.25],
-            2:[3.25,3.0,3.5,3.75],
-            3:[3.75,4.0,4.25,4.5],
-            4:[4.5,5.0,5.5],
-            5:[5.5,6.0,6.5,7.0,7.5],
-            6:[8,9,10,11,12,13],
-            7:[13,14,15,16,17,18,19,20,21,22,23,24,25]}
-        if 'needle_size' in kwargs.keys():
-            needle=kwargs['needle_size']
-        else:
-            needle=self.guess_needle_size(yarn_weight)
-        s=self.guess_guage(yarn_weight,needle)
-        super().__init__((s,4),(s,4),needle,yarn_weight)
+    #stitches per 4 inches for various yarn weights
+    _stitches_per_4_inches={0:range(33,40),1:range(27,32),
+    2:range(23,26),3:range(21,24),4:range(16,20),5:range(12,15),
+    6:range(7,11),7:range(1,6)}
+    _recommended_needle={0:[1.5,1.75,2.00,2.25],
+        1:[2.25,2.5,3.0,3.25],
+        2:[3.25,3.0,3.5,3.75],
+        3:[3.75,4.0,4.25,4.5],
+        4:[4.5,5.0,5.5],
+        5:[5.5,6.0,6.5,7.0,7.5],
+        6:[8,9,10,11,12,13],
+        7:[13,14,15,16,17,18,19,20,21,22,23,24,25]}
 
-    def guess_needle_size(self,yarn_weight):
+    def _guess_needle_size(self,yarn_weight,knitter=0.5):
         """
         Use US standard needle ranges to guess a recommended needle size given the yarn weight. Adjust if knitter knits tight/loose.
         """
@@ -216,73 +167,61 @@ class StandardGuage(Guage):
         if needle_range is None:
             raise ValueError(f"Yarn weight must be an integer between 0 and 7. Weight given is {yarn_weight}")
         needle_list=list(needle_range)
-        if self._knitter_type==-1:
-            needle=needle_list[-1]
-        elif self._knitter_type==1:
-            needle=needle_list[0]
-        else:
-            needle=needle_list[len(needle_list)//2]
-            print(f"Needle size guessed to be {needle}mm for yarn weight {yarn_weight}.")
-        return needle
+        needle_size=needle_list[floor(len(needle_list)*knitter)]
+        print(f"Needle size guessed to be {needle_size}mm for yarn weight {yarn_weight}. Swatch to make sure!")
+        return needle_size
         
-    def guess_guage(self,yarn_weight,needle_size):
+    def _guess_s_per_4(self,yarn_weight,needle_size,knitter):
         """
         Use yarn_weight, needle_size and input knitter type to guess the number of stickingette stitches per 4 inches
+        Arguments:
+        yarn_weight: integer 0-7
+        needle_size: Needle size (must be in mms), use NeedleConversion if you have a us or uk size
         """
         needle_list=list(self._recommended_needle.get(yarn_weight))
         stitch_list=list(self._stitches_per_4_inches.get(yarn_weight))
-        if needle_size not in needle_list:
-            raise ValueError(f"Needle size {needle_size}mm is not recommended for Yarn Weight {yarn_weight}. Please knit a guage swatch.")
-        middle_n=len(needle_list)//2
-        if len(needle_list)==1:
-            n=0
-        else:
-            n=(needle_list.index(needle_size)-middle_n)/(len(needle_list)-1)
+        if stitch_list is None or needle_list is None:
+            raise ValueError("Yarn weight must be a number 0-7")
+        #If needle size isn't given, guess based on whether the knitter 
+        #recommended needle size is a range:"tight" (close to 1) knitters are recommended larger needles. 
+        # "loose" knitters get smaller ones.
+        if needle_size is None:
+            needle_size=self._guess_needle_size(yarn_weight,knitter=knitter)
+        elif needle_size not in needle_list:
+            raise Warning(f"Needle size {needle_size}mm is not recommended for Yarn Weight {yarn_weight}. Please knit a guage swatch.")
         #Assume we're in the middle of the standard stitch range. 
         #Move up or down depending on which needle and knitter type we have
-        pos=0.5+(self._knitter_type.value)*0.25
-        pos=pos+n
-        if pos<=0:
+        needle_pos=needle_list.index(needle_size)/len(needle_list)
+        s_pos=(knitter-(needle_pos-0.5))*len(stitch_list)
+        if s_pos<=0:
             return min(stitch_list)
-        elif pos>=1:
+        elif s_pos>=1:
             return max(stitch_list)
         else:
-            return stitch_list[floor(pos*(len(stitch_list)-1))]
-
+             return needle_list[floor(s_pos*len(needle_list))]
+    
+    def guess_guage(self,yarn_weight,units='in',needle_size=None,knitter=0.5):
+        s_per_4_inch=self._guess_s_per_4(yarn_weight,needle_size,knitter)
+        if units=='in':
+            return Guage((s_per_4_inch,4),(s_per_4_inch,4),units='in')
+        elif units=='cm':
+            return Guage((s_per_4_inch,4),(s_per_4_inch,4),units='cm')
+        else:
+            raise ValueError(f"Please measure in cm or in, units given was:{units}.") 
+        
     def __str__(self):
-        return super.__str__(self)+" (For a "+str(self._knitter_type)+" knitter)."            
-
-class KnittingDistance(MeasureBase):
-    """
-    A units-aware class that includes stitches per inch and rows per inch. 
-    """
-    STANDARD_UNIT='cm'
-    UNITS={'cm':1.0,'in':2.54,'yd':91.44,'m':1000.0}
-    ALIAS={'inch':'in','centimeters':'cm','yard':'yd','meter':'m','s':'stitch','r':'row'}
-
-    def __init__(self,guage,*args,**kwargs):
-        """
-        Read in guage numbers that the user provides. Turn the numbers into something we can use to calculate.  
-        """
-        super.__init__(*args,**kwargs)
-        if 'stitches_per_inch' in kwargs:
-            self.UNITS['s']=2.54*kwargs['stitches_per_inch']
-        elif 'stitches_per_cm' in kwargs:
-            self.UNITS['s']=kwargs['stitches_per_cm']
-        if 'rows_per_inch' in kwargs:
-            self.UNITS['r']=2.54*kwargs['rows_per_inch']
-        if 'rows_per_cm' in kwargs:
-            self.UNITS['r']=kwargs['rows']
+        return "Class to recommend needle and guess guage given yarn weight."  
+                  
 def main():
     print("Demonstrations of Knitting Conversion Classes")
     print("Almost every knitting pattern needs a guage. If this is a garment (like a sweater or sock), you should knit a swatch.")
-    g=Guage((33,4),(33,4),2.0,0)
+    g=Guage((33,4),(33,4),units='in')
     print("This is a standard lace weight guage with a US size 1 (2.25mm) needle:")
     print(g.__str__())
     print("We keep the decimal places and round where needed for the pattern instructions. This keeps measurements precise.")
     print("\n If you don't feel like knitting a swatch, we will use standard guagers if you tell us the yarn weight and needle size.")
-    g2=StandardGuage(0,2.25)
-    print(g2.__str__())
+    g2=StandardGuage()
+    print(g2.guess_guage(0,knitter=0.5).__str__())
 
 if __name__=="__main__":
     main()

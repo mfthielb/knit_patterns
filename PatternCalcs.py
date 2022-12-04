@@ -1,6 +1,7 @@
 from abc import abstractclassmethod
 from measurement.measures import Distance
 from collections import namedtuple
+from KnittingConversions import *
 """
 Basic classes for PatternMeasure's and PatternSections
 """
@@ -573,6 +574,9 @@ class FootMeasure(PatternMeasure):
         return "FootMeasure(\{'around_foot'={0},'toe_to_heel'={1}\},units={2},ease={3})".format(self.measure_values("around_foot"),self.measure_values("toe_to_heel"),self.units,self.ease_adjusted)
 
 class SockStitches(namedtuple('PatternStitches',['s_around_foot','r_toe_to_heel','r_per_inch'])):
+    """
+    NamedTuple that holds vital stitch statistics for a sock pattern
+    """
     @property
     def toe_start(self):
         return round(self.s_around_foot/2)
@@ -585,31 +589,6 @@ class SockStitches(namedtuple('PatternStitches',['s_around_foot','r_toe_to_heel'
     @property
     def gusset_increase(self):
         return self.s_around_foot/4
-    
-class Guage(namedtuple('Guage',['s_per_unit','r_per_unit','units'])):
-    __slots__=()
-    def stitches(self,v):
-        """
-        Guage is set as x stitches per y units.
-        """
-        return self.s_per_unit[0]/self.s_per_unit[1]*v
-
-    def rows(self,v):
-        """
-        Guage is often set as x rows per y units.
-        """
-        return self.r_per_unit[0]/self.r_per_unit[1]*v
-        
-    def units_to_rows(self,v,units=None):
-        return self.r_per_unit[1]/self.r_per_unit[0]*v
-        
-    def units_to_stitches(self,v):
-        return self.s_per_unit[1]/self.s_per_unit[0]*v
-
-    def __str__(self):
-        return "Guage is: {0}, stitches per {2} and {1} rows per {2}.".format(self.s_per_unit,self.r_per_unit,self.units)
-    def __repr__(self):
-        return "Guage(s_per_unit={0},r_per_unit={1},units={2})".format(self.s_per_unit,self.r_per_unit,self.units)
 
 class SockPatternSections(namedtuple('PatternSections',['toe','instep','gusset','heel','leg','cuff'])):
     __slots__=()

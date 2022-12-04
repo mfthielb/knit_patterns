@@ -3,7 +3,6 @@ from copy import deepcopy
 from tabnanny import verbose
 from unicodedata import ucd_3_2_0
 from math import floor
-import measurement as m
 from collections import namedtuple
 from PatternCalcs import PatternMeasure
 
@@ -34,33 +33,33 @@ class NeedleConversion:
     """
     Needle=namedtuple("Needle",["mm","us","uk"])
     def __init__(self):
-        self._needles={1.25:Needle(us='0000',mm=1.25,uk=18),
-        1.5:Needle(us='000',mm=1.5,uk=17),
-        1.75:Needle(us='00',mm=1.75,uk=15),
-        2.0: Needle(us=0,mm=2.0,uk=14),
-        2.25: Needle(us=1,mm=2.25,uk=13),
-        2.5: Needle(us=1.5,mm=2.5,uk=None),
-        2.75: Needle(us=2,mm=2.75,uk=12),
-        3.0: Needle(us=2.5,mm=3.0,uk=11),
-        3.25: Needle(us=3,mm=3.25,uk=10), 
-        3.5: Needle(us=4,mm=3.5,uk=None),
-        3.75:Needle(us=5,mm=3.75,uk=9),
-        4.0:Needle(us=6,mm=4.0,uk=8),
-        4.5: Neeedle(us=7,mm=4.5,uk=8),
-        5.0: Needle(us=8,mm=5.0,uk=7),
-        5.5: Needle(us=9,mm=5.5,uk=5),
-        6.0: Needle(us=10,mm=6.0,uk=4),
-        6.5: Needle(us=10.5,mm=6.5,uk=3),
-        7.0:Needle(us=None,mm=7.0,uk=2),
-        7.5:Needle(us=None,mm=7.5,uk=1),
-        8.0: Needle(us=11,mm=8.0,uk=0),
-        9.0: Needle(us=13,mm=9.0,uk='00'),
-        10.0: Needle(us=15,mm=10.0,uk='000'),
-        13.0: Needle(us=17,mm=13.0,uk=None),
-        15.0: Needle(us=19,mm=15.0,uk=None),
-        19.0:Neelde(us=35,mm=19.0,uk=None),
-        20.0:Needle(us=36,mm=2.0,uk=None),
-        25.0:Needle(us=50,mm=25.0,uk=None)}
+        self._needles={1.25: self.Needle(us='0000',mm=1.25,uk=18),
+        1.5:self.Needle(us='000',mm=1.5,uk=17),
+        1.75:self.Needle(us='00',mm=1.75,uk=15),
+        2.0: self.Needle(us=0,mm=2.0,uk=14),
+        2.25: self.Needle(us=1,mm=2.25,uk=13),
+        2.5: self.Needle(us=1.5,mm=2.5,uk=None),
+        2.75: self.Needle(us=2,mm=2.75,uk=12),
+        3.0: self.Needle(us=2.5,mm=3.0,uk=11),
+        3.25: self.Needle(us=3,mm=3.25,uk=10), 
+        3.5: self.Needle(us=4,mm=3.5,uk=None),
+        3.75: self.Needle(us=5,mm=3.75,uk=9),
+        4.0: self.Needle(us=6,mm=4.0,uk=8),
+        4.5: self.Needle(us=7,mm=4.5,uk=8),
+        5.0: self.Needle(us=8,mm=5.0,uk=7),
+        5.5: self.Needle(us=9,mm=5.5,uk=5),
+        6.0: self.Needle(us=10,mm=6.0,uk=4),
+        6.5: self.Needle(us=10.5,mm=6.5,uk=3),
+        7.0: self.Needle(us=None,mm=7.0,uk=2),
+        7.5: self.Needle(us=None,mm=7.5,uk=1),
+        8.0: self.Needle(us=11,mm=8.0,uk=0),
+        9.0: self.Needle(us=13,mm=9.0,uk='00'),
+        10.0: self.Needle(us=15,mm=10.0,uk='000'),
+        13.0: self.Needle(us=17,mm=13.0,uk=None),
+        15.0: self.Needle(us=19,mm=15.0,uk=None),
+        19.0:self.Needle(us=35,mm=19.0,uk=None),
+        20.0: self.Needle(us=36,mm=2.0,uk=None),
+        25.0: self.Needle(us=50,mm=25.0,uk=None)}
 
         self._us_to_mm={}
         self._uk_to_mm={}
@@ -71,14 +70,24 @@ class NeedleConversion:
                 self._uk_to_mm[v['uk']]=k
 
     def convert_needle(self,in_size,in_units="us",out_units="uk"):
-        if in_units=="us":
+        """
+        Find the right needle for the given input and output units.
+        """
+        u=in_units.lower()
+        o=out_units.lower()
+        #Get mm version of needle size so we have the key for the needle dictionary
+        if u=="us":
             mm=self._us_to_mm.get(in_size)
-            if mm is None:
-                raise ValueError(f"No US Needle of size {in_size}. Use in_units= if converting from mm or UK needle size.")
-            if out_units=="uk":
-                return self.mm_to_uk(mm)
-            if out_units=="mm":
-                return mm
+        elif u=="uk":
+            mm=self._uk_to_mm.get(in_size)
+        else:
+            raise ValueError(f"This conversion only handles US and UK needle sizes. Input units were: {in_units} ")
+        if mm is None:
+            raise ValueError(f"No known {in_units} needle of size {in_size}.")
+        if o=='us':
+            return self.mm_to_us(mm)
+        if o=='uk':
+            return self.mm_to_uk(mm)
 
     def mm_to_uk(self,mm):
         size=self._needles[mm]["uk"]
@@ -187,13 +196,13 @@ class StandardGuage(Guage):
         s=self.guess_guage(yarn_weight,needle)
         super().__init__((s,4),(s,4),needle,yarn_weight)
 
-    def guess_needle_size(self,yarn_weight,knitter=KnitterType.AVERAGE):
+    def guess_needle_size(self,yarn_weight,knitter=KnitterType.AVERAGE,units='us'):
         """
         Use US standard needle ranges to guess a recommended needle size given the yarn weight. Adjust if knitter knits tight/loose.
         """
         needle_range=self._recommended_needle.get(yarn_weight)
         if needle_range is None:
-            raise ValueError(f"Yarn weight must be an integer between 0 and 7. Weight given is {yarn_weight}")
+            raise ValueError(f"Yarn weight must be an integer between 0 and 7. Yarn weight given is {yarn_weight}")
         needle_list=list(needle_range)
         if knitter==KnitterType.TIGHT:
             self._needle_size=needle_list[-1]
