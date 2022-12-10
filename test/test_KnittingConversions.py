@@ -2,6 +2,8 @@ import sys
 sys.path.append('..')
 from KnittingConversions import *
 import unittest
+from collections import Counter
+from math import floor, ceil
 
 class TestGuessNeedle(unittest.TestCase):
     sg=StandardGuage()
@@ -21,20 +23,26 @@ class TestGuessNeedle(unittest.TestCase):
 
     def test_mid_knitter(self):
         """
-        Loose knitters (min knitter) should get the smallest recommended needle
+        Middle knitters (knitter=0.5) should get the middle recommended needle
         """
         for w,n in self.sg._recommended_needle.items():
-            self.assertEqual(self.sg._guess_needle_size(w,0.5),n[floor(len(n)/2)],f"We don't get the smallest needle for weight {w} and knitter=0.0")
+            self.assertEqual(self.sg._guess_needle_size(w,0.5),n[floor(len(n)/2)],f"We don't get the middle needle for weight {w} and knitter=0.5")
 
     def test_needle_range(self):
         """
-        Every needle in the list should be 'reachable', i.e. there should be a knitter setting that will let us get that needle
+        Every needle in the recommended list should be 'reachable', i.e. there should be a knitter setting that will let us get that needle
         """
         for w,n in self.sg._recommended_needle.items():
             all_ns=[]
             for k in range(0,99):
                 all_ns.append(self.sg._guess_needle_size(w,k/100))
             self.assertEqual(len(set(all_ns)),len(n),f"Not all needles are reachable for yarn weight {w}")
+            c=Counter(all_ns)
+            n=sum(c.values())
+            expected=n/len(c)
+            ok_diff=ceil(expected*0.2)
+            for k,v in c.items():
+                self.assertLess(abs(v-expected),ok_diff,f"Needle {k} is off for weight {w}. Expected to get {expected} times but got {v} instead.")
 
 class TestGuessSPerUnit(unittest.TestCase):
     sg=StandardGuage()
@@ -58,7 +66,7 @@ class TestGuessSPerUnit(unittest.TestCase):
     
     def test_loose_knitter_large_needle(self):
         """
-        If a loose knitter uses a large needle, they should have average guage
+        If a loose knitter uses the smallest needle, they should have average guage
         """
         for w,n in self.sg._recommended_needle.items():
             stitches=list(self.sg._stitches_per_4_inches.get(w))
