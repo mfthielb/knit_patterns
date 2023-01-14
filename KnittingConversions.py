@@ -4,9 +4,34 @@ from copy import deepcopy
 from tabnanny import verbose
 from unicodedata import ucd_3_2_0
 from math import floor
-from measurement.base import MeasureBase
 from collections import namedtuple
 
+#stitches per 4 inches for various yarn weights
+STITCHES_PER_4_INCHES={0:range(33,40),1:range(27,32),
+    2:range(23,26),3:range(21,24),4:range(16,20),5:range(12,15),
+    6:range(7,11),7:range(1,6)}
+
+RECOMMENDED_NEEDLES_IN_MM={0:[1.5,1.75,2.00,2.25],
+        1:[2.25,2.5,3.0,3.25],
+        2:[3.0,3.25,3.5,3.75],
+        3:[3.75,4.0,4.25,4.5],
+        4:[4.5,5.0,5.5],
+        5:[5.5,6.0,6.5,7.0,7.5],
+        6:[8,9,10,11,12,13],
+        7:[13,14,15,16,17,18,19,20,21,22,23,24,25]}
+
+class ShoeSize(NamedTuple):
+    """
+    A namedtuple for shoe sizes
+    """
+    us: int
+    uk: int
+    eu: int
+    cm: int
+    inches: int
+    width: str
+
+    
 class YarnWeight(Enum):
     """
     Enumerator for yarn weights
@@ -21,18 +46,7 @@ class YarnWeight(Enum):
     JUMBO=7
 
 Needle=namedtuple("Needle",["mm","us","uk"])
-
-class NeedleConversion:
-    """
-    Convert needle sizes between mm, US, and UK-style sizes
-    Members: 
-    Needle: namedtuple of needles with all needle measurements
-    _needles: A dictionary of needle conversions indexed by size in mm. Has US and UK sizes  
-    _us_to_mm: Dictionary converting US needle sizes to size in mm
-    _uk_to_mm: Dictionary converting UK needle sizes to size in mm
-    """
-    def __init__(self):
-        self._needles={1.25:Needle(us='0000',mm=1.25,uk=18),
+NEEDLE_CHART={1.25:Needle(us='0000',mm=1.25,uk=18),
         1.5:Needle(us='000',mm=1.5,uk=17),
         1.75:Needle(us='00',mm=1.75,uk=15),
         2.0: Needle(us=0,mm=2.0,uk=14),
@@ -60,9 +74,19 @@ class NeedleConversion:
         20.0:Needle(us=36,mm=2.0,uk=None),
         25.0:Needle(us=50,mm=25.0,uk=None)}
 
+class NeedleConversion:
+    """
+    Convert needle sizes between mm, US, and UK-style sizes
+    Members: 
+    Needle: namedtuple of needles with all needle measurements
+    _needles: A dictionary of needle conversions indexed by size in mm. Has US and UK sizes  
+    _us_to_mm: Dictionary converting US needle sizes to size in mm
+    _uk_to_mm: Dictionary converting UK needle sizes to size in mm
+    """
+    def __init__(self):
         self._us_to_mm={}
         self._uk_to_mm={}
-        for k,v in self._needles.items():
+        for k,v in NEEDLE_CHART.items():
             if v.us is not None:
                 self._us_to_mm[v.us]=k
             if v.uk is not None:
@@ -85,16 +109,16 @@ class NeedleConversion:
             return mm
 
     def mm_to_uk(self,mm):
-        size=self._needles[mm].uk
+        size=NEEDLE_CHART.get(mm).uk
         if size is None:
             if mm>10.0:
                 raise ValueError(f"There is no UK size needle larger than 10.0mm. Use US measurements.")
             else:
-                self.get_closest_needle(mm,"uk")
+                size=self.get_closest_needle(mm,"uk")
         return size
 
     def mm_to_us(self,mm):
-        size=self._needles[mm].us
+        size=NEEDLE_CHART.get(mm).us
         if size is None:
             size=self.get_closest_needle(mm,"us")
         return size
@@ -105,14 +129,17 @@ class NeedleConversion:
         """
         if units not in ("us","uk"):
             raise ValueError(f"We only have US or UK needle sizes available. Given: {units}")
-        size=self._needles.get(mm).__getattribute__(units)
+        size=NEEDLE_CHART.get(mm).__getattribute__(units)
         if size is not None:
             return size
-        possible_mms=self._needles.keys()
+        possible_mms=list(NEEDLE_CHART.keys())
         diff=[abs(mm-x) for x in possible_mms]
         smallest_diff=min([d for d in diff if d>0])
+        #TODO: could do this one more time to get multiple needle possibilities
+        #return a list of needles and let the user sort this out
+        #or base the response on an input guage
         i=diff.index(smallest_diff)
-        size=self._needles[possible_mms[i]].__getattribute__(units)
+        size=NEEDLE_CHART[possible_mms[i]].__getattribute__(units)
         if size is not None:
             return size
         raise ValueError(f"No close needle of size {mm} mms in {units}.")
@@ -156,18 +183,6 @@ class StandardGuage():
     Class that knows standard guages for yarn weights and needle sizes.
     Has the ability to guess stockingette guage given yarn weight and either needle size or knitter type (0,1)
     """
-    #stitches per 4 inches for various yarn weights
-    _stitches_per_4_inches={0:range(33,40),1:range(27,32),
-    2:range(23,26),3:range(21,24),4:range(16,20),5:range(12,15),
-    6:range(7,11),7:range(1,6)}
-    _recommended_needle={0:[1.5,1.75,2.00,2.25],
-        1:[2.25,2.5,3.0,3.25],
-        2:[3.0,3.25,3.5,3.75],
-        3:[3.75,4.0,4.25,4.5],
-        4:[4.5,5.0,5.5],
-        5:[5.5,6.0,6.5,7.0,7.5],
-        6:[8,9,10,11,12,13],
-        7:[13,14,15,16,17,18,19,20,21,22,23,24,25]}
 
     def _guess_needle_size(self,yarn_weight,knitter=0.5):
         """
@@ -228,7 +243,7 @@ def main():
     print("This is a standard lace weight guage with a US size 1 (2.25mm) needle:")
     print(g.__str__())
     print("We keep the decimal places and round where needed for the pattern instructions. This keeps measurements precise.")
-    print("\n If you don't feel like knitting a swatch, we will use standard guagers if you tell us the yarn weight and needle size.")
+    print("\n If you don't feel like knitting a swatch, we will use standard guages if you tell us the yarn weight and needle size.")
     g2=StandardGuage()
     print(g2.guess_guage(0,knitter=0.5).__str__())
 
