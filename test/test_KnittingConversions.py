@@ -73,4 +73,39 @@ class TestGuessSPerUnit(unittest.TestCase):
             guess=self.sg._guess_s_per_4(w,min(n),knitter=0)
             self.assertEqual(guess,stitches[floor(len(stitches)/2)])
 
+class TestNeedleConversion(unittest.TestCase):
+    n_converter=NeedleConversion()
+    def test_mm_to_us_uk(self):
+        """
+        Make sure 1:1 conversions work for US needles
+        """
+        for mm,needle in self.n_converter._needles.items():
+            if needle.uk is not None:
+                closest=self.n_converter.get_closest_needle(mm,"uk")
+                self.assertEqual(needle.uk,closest,
+                "Wrong answer for NeedleConversion.get_closest_needle. got {0}. Should have {1}. Needle is: {2}"
+                .format(closest,needle.uk,needle))
+                self.assertEqual(self.n_converter.mm_to_uk(mm),needle.uk,
+                f"Wrong answer for needle conversion mm_to_uk. Got {self.n_converter.mm_to_uk(mm)}. Should have {needle.uk}. Needle is: {needle}")
+            if needle.us is not None:
+                closest=self.n_converter.get_closest_needle(mm,"us")
+                self.assertEqual(needle.us,closest,
+                "Wrong answer for NeedleConversion.get_closest_needle. got {0}. Should have {1}. Needle is: {2}"
+                .format(closest,needle.us,needle))
+                self.assertEqual(self.n_converter.mm_to_us(mm),needle.us,
+                f"Wrong answer for needle conversion mm_to_us. Got {self.n_converter.mm_to_us(mm)}. Should have {needle.us}. Needle is: {needle}")
+ 
+    def test_some_none(self):
+        c=0
+        for mm,needle in self.n_converter._needles.items():
+            if needle.uk is None:
+                c=c+1
+        self.assertNotEqual(c,0,"There should be at least one needle with no UK equivalent")
+
+    def test_closest_us_1point5(self):
+        needle=self.n_converter._needles.get(2.5).us
+        closest=self.n_converter.convert_needle(1.5,"us","uk")
+        self.assertEqual(needle,closest,f"Wrong answer for NeedleConversion.convert_needle. Got {closest}. Should have {needle}")
+
+
 if __name__=="__main__":unittest.main()

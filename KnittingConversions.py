@@ -20,11 +20,17 @@ class YarnWeight(Enum):
     SUPERBULKY=6
     JUMBO=7
 
+Needle=namedtuple("Needle",["mm","us","uk"])
+
 class NeedleConversion:
     """
     Convert needle sizes between mm, US, and UK-style sizes
+    Members: 
+    Needle: namedtuple of needles with all needle measurements
+    _needles: A dictionary of needle conversions indexed by size in mm. Has US and UK sizes  
+    _us_to_mm: Dictionary converting US needle sizes to size in mm
+    _uk_to_mm: Dictionary converting UK needle sizes to size in mm
     """
-    Needle=namedtuple("Needle",["mm","us","uk"])
     def __init__(self):
         self._needles={1.25:Needle(us='0000',mm=1.25,uk=18),
         1.5:Needle(us='000',mm=1.5,uk=17),
@@ -38,7 +44,7 @@ class NeedleConversion:
         3.5: Needle(us=4,mm=3.5,uk=None),
         3.75:Needle(us=5,mm=3.75,uk=9),
         4.0:Needle(us=6,mm=4.0,uk=8),
-        4.5: Neeedle(us=7,mm=4.5,uk=8),
+        4.5: Needle(us=7,mm=4.5,uk=8),
         5.0: Needle(us=8,mm=5.0,uk=7),
         5.5: Needle(us=9,mm=5.5,uk=5),
         6.0: Needle(us=10,mm=6.0,uk=4),
@@ -50,30 +56,36 @@ class NeedleConversion:
         10.0: Needle(us=15,mm=10.0,uk='000'),
         13.0: Needle(us=17,mm=13.0,uk=None),
         15.0: Needle(us=19,mm=15.0,uk=None),
-        19.0:Neelde(us=35,mm=19.0,uk=None),
+        19.0: Needle(us=35,mm=19.0,uk=None),
         20.0:Needle(us=36,mm=2.0,uk=None),
         25.0:Needle(us=50,mm=25.0,uk=None)}
 
         self._us_to_mm={}
         self._uk_to_mm={}
         for k,v in self._needles.items():
-            if v["us"] is not None:
-                self._us_to_mm[v["us"]]=k
-            if v["uk"] is not None:
-                self._uk_to_mm[v['uk']]=k
+            if v.us is not None:
+                self._us_to_mm[v.us]=k
+            if v.uk is not None:
+                self._uk_to_mm[v.uk]=k
 
     def convert_needle(self,in_size,in_units="us",out_units="uk"):
         if in_units=="us":
             mm=self._us_to_mm.get(in_size)
-            if mm is None:
-                raise ValueError(f"No US Needle of size {in_size}. Use in_units= if converting from mm or UK needle size.")
-            if out_units=="uk":
-                return self.mm_to_uk(mm)
-            if out_units=="mm":
-                return mm
+        elif in_units=="uk":
+            mm=self._uk_to_mm.get(in_size)
+        elif in_units=="mm":
+            mm=in_size
+        if mm is None:
+            raise ValueError(f"No Needle of size {in_size} in {in_units} units. Use in_units= if converting from mm or UK needle size.")
+        if out_units=="uk":
+            return self.mm_to_uk(mm)
+        if out_units=="us":
+            return self.mm_to_us(mm)
+        if out_units=="mm":
+            return mm
 
     def mm_to_uk(self,mm):
-        size=self._needles[mm]["uk"]
+        size=self._needles[mm].uk
         if size is None:
             if mm>10.0:
                 raise ValueError(f"There is no UK size needle larger than 10.0mm. Use US measurements.")
@@ -82,7 +94,7 @@ class NeedleConversion:
         return size
 
     def mm_to_us(self,mm):
-        size=self._needles[mm]["us"]
+        size=self._needles[mm].us
         if size is None:
             size=self.get_closest_needle(mm,"us")
         return size
@@ -93,19 +105,17 @@ class NeedleConversion:
         """
         if units not in ("us","uk"):
             raise ValueError(f"We only have US or UK needle sizes available. Given: {units}")
+        size=self._needles.get(mm).__getattribute__(units)
+        if size is not None:
+            return size
         possible_mms=self._needles.keys()
-        diff=abs(mm-possible_mms)
-        test_size=self._needles[possible_mms[diff.index(0.0)]][units]
-        if test_size is not None:
-            return test_size
-        m=min([mm for mm in diff if mm!=0])
-        indicies=[i for x in enumerate(diff) if x==m]
-        for i in indicies:
-            size=self._needles[possible_mms[i]]
-            if size is not None:
-                return size
-        else: 
-            raise ValueError(f"No close needle of size {mm} mms in {units}.")
+        diff=[abs(mm-x) for x in possible_mms]
+        smallest_diff=min([d for d in diff if d>0])
+        i=diff.index(smallest_diff)
+        size=self._needles[possible_mms[i]].__getattribute__(units)
+        if size is not None:
+            return size
+        raise ValueError(f"No close needle of size {mm} mms in {units}.")
     
 class Guage(namedtuple('Guage',['s_per_unit','r_per_unit','units'])):
     """
@@ -168,7 +178,6 @@ class StandardGuage():
             raise ValueError(f"Yarn weight must be an integer between 0 and 7. Weight given is {yarn_weight}")
         needle_list=list(needle_range)
         needle_size=needle_list[floor(len(needle_list)*knitter)]
-        print(f"Needle size guessed to be {needle_size}mm for yarn weight {yarn_weight}. Swatch to make sure!")
         return needle_size
         
     def _guess_s_per_4(self,yarn_weight,needle_size,knitter):
