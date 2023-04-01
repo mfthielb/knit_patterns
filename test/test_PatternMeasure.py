@@ -1,12 +1,12 @@
 import sys
 sys.path.append("..")
-from PatternCalcs import PatternMeasure
+from pattern import PatternMeasure
 import unittest
 
 class TestPatternMeasure(unittest.TestCase):
     def test_minimal_arg(self):
         """
-        Make sure pattern measure raises errors when not given vital measures or a dictionarr 
+        Make sure pattern measure raises errors when not given vital measures or a dictionary 
         """
         with self.assertRaises(Warning):
             m=PatternMeasure(None,None,None)

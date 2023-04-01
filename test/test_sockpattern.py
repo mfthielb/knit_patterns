@@ -1,7 +1,7 @@
 import sys
 sys.path.append('..')
 import unittest 
-from PatternCalcs import *
+from sock import *
 
 class TestGuage(unittest.TestCase):
     guage_in=Guage((30,4),(30,4),units='in')
