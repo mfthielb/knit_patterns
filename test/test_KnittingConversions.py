@@ -11,28 +11,28 @@ class TestGuessNeedle(unittest.TestCase):
         """
         Tight knitters (max knitter) should get the largest recommended needle
         """
-        for w,n in self.sg._recommended_needle.items():
+        for w,n in RECOMMENDED_NEEDLES_IN_MM.items():
             self.assertEqual(self.sg._guess_needle_size(w,0.99),max(n),f"We don't get the largest needle for weight {w} and knitter=0.99")
 
     def test_loose_knitter(self):
         """
         Loose knitters (min knitter) should get the smallest recommended needle
         """
-        for w,n in self.sg._recommended_needle.items():
+        for w,n in RECOMMENDED_NEEDLES_IN_MM.items():
             self.assertEqual(self.sg._guess_needle_size(w,0),min(n),f"We don't get the smallest needle for weight {w} and knitter=0.0")
 
     def test_mid_knitter(self):
         """
         Middle knitters (knitter=0.5) should get the middle recommended needle
         """
-        for w,n in self.sg._recommended_needle.items():
+        for w,n in RECOMMENDED_NEEDLES_IN_MM.items():
             self.assertEqual(self.sg._guess_needle_size(w,0.5),n[floor(len(n)/2)],f"We don't get the middle needle for weight {w} and knitter=0.5")
 
     def test_needle_range(self):
         """
         Every needle in the recommended list should be 'reachable', i.e. there should be a knitter setting that will let us get that needle
         """
-        for w,n in self.sg._recommended_needle.items():
+        for w,n in RECOMMENDED_NEEDLES_IN_MM.items():
             all_ns=[]
             for k in range(0,99):
                 all_ns.append(self.sg._guess_needle_size(w,k/100))
@@ -50,8 +50,8 @@ class TestGuessSPerUnit(unittest.TestCase):
         """
         Mid-sized needle for average knitter should give middle guage guess
         """
-        for w,n in self.sg._recommended_needle.items():
-            stitches=list(self.sg._stitches_per_4_inches.get(w))
+        for w,n in RECOMMENDED_NEEDLES_IN_MM.items():
+            stitches=list(STITCHES_PER_4_INCHES.get(w))
             guess=self.sg._guess_s_per_4(w,n[floor(len(n)/2)],knitter=0.5)
             self.assertEqual(guess,stitches[floor(len(stitches)/2)])
 
@@ -59,8 +59,8 @@ class TestGuessSPerUnit(unittest.TestCase):
         """
         If a tight knitter has the largest needle, they should have average guage
         """
-        for w,n in self.sg._recommended_needle.items():
-            stitches=list(self.sg._stitches_per_4_inches.get(w))
+        for w,n in RECOMMENDED_NEEDLES_IN_MM.items():
+            stitches=list(STITCHES_PER_4_INCHES.get(w))
             guess=self.sg._guess_s_per_4(w,max(n),knitter=0.99)
             self.assertEqual(guess,stitches[floor(len(stitches)/2)])
     
@@ -68,8 +68,8 @@ class TestGuessSPerUnit(unittest.TestCase):
         """
         If a loose knitter uses the smallest needle, they should have average guage
         """
-        for w,n in self.sg._recommended_needle.items():
-            stitches=list(self.sg._stitches_per_4_inches.get(w))
+        for w,n in RECOMMENDED_NEEDLES_IN_MM.items():
+            stitches=list(STITCHES_PER_4_INCHES.get(w))
             guess=self.sg._guess_s_per_4(w,min(n),knitter=0)
             self.assertEqual(guess,stitches[floor(len(stitches)/2)])
 
@@ -79,7 +79,7 @@ class TestNeedleConversion(unittest.TestCase):
         """
         Make sure 1:1 conversions work for US needles
         """
-        for mm,needle in self.n_converter._needles.items():
+        for mm,needle in NEEDLE_CHART.items():
             if needle.uk is not None:
                 closest=self.n_converter.get_closest_needle(mm,"uk")
                 self.assertEqual(needle.uk,closest,
@@ -97,15 +97,15 @@ class TestNeedleConversion(unittest.TestCase):
  
     def test_some_none(self):
         c=0
-        for mm,needle in self.n_converter._needles.items():
+        for mm,needle in NEEDLE_CHART.items():
             if needle.uk is None:
                 c=c+1
         self.assertNotEqual(c,0,"There should be at least one needle with no UK equivalent")
 
     def test_closest_us_1point5(self):
-        needle=self.n_converter._needles.get(2.5).us
-        closest=self.n_converter.convert_needle(1.5,"us","uk")
-        self.assertEqual(needle,closest,f"Wrong answer for NeedleConversion.convert_needle. Got {closest}. Should have {needle}")
-
+        #Closest UK needle to a 2.5mm is a size 13. 
+        needle=NEEDLE_CHART.get(2.5).us
+        closest=self.n_converter.convert_needle(needle,"us","uk")
+        self.assertEqual(13,closest,f"Wrong answer for NeedleConversion.convert_needle. Got {closest}. Should have {needle}")
 
 if __name__=="__main__":unittest.main()
