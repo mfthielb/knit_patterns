@@ -5,6 +5,7 @@ from tabnanny import verbose
 from unicodedata import ucd_3_2_0
 from math import floor
 from collections import namedtuple
+from typing import NamedTuple
 
 #stitches per 4 inches for various yarn weights
 STITCHES_PER_4_INCHES={0:range(33,40),1:range(27,32),
@@ -22,7 +23,7 @@ RECOMMENDED_NEEDLES_IN_MM={0:[1.5,1.75,2.00,2.25],
 
 class ShoeSize(NamedTuple):
     """
-    A namedtuple for shoe sizes
+    A NamedTuple for shoe sizes
     """
     us: int
     uk: int
@@ -78,7 +79,7 @@ class NeedleConversion:
     """
     Convert needle sizes between mm, US, and UK-style sizes
     Members: 
-    Needle: namedtuple of needles with all needle measurements
+    Needle: NamedTuple of needles with all needle measurements
     _needles: A dictionary of needle conversions indexed by size in mm. Has US and UK sizes  
     _us_to_mm: Dictionary converting US needle sizes to size in mm
     _uk_to_mm: Dictionary converting UK needle sizes to size in mm
@@ -144,11 +145,13 @@ class NeedleConversion:
             return size
         raise ValueError(f"No close needle of size {mm} mms in {units}.")
     
-class Guage(namedtuple('Guage',['s_per_unit','r_per_unit','units'])):
+class Guage(NamedTuple):
     """
     An object to keep track of knitters guage and calculate stitches/rows for a given units input.
     """
-    __slots__=()
+    s_per_unit:float
+    r_per_unit: float
+    units: float
     def stitches(self,v):
         """
         Guage is set as x stitches per y units.
@@ -188,7 +191,7 @@ class StandardGuage():
         """
         Use US standard needle ranges to guess a recommended needle size given the yarn weight. Adjust if knitter knits tight/loose.
         """
-        needle_range=self._recommended_needle.get(yarn_weight)
+        needle_range=RECOMMENDED_NEEDLES_IN_MM.get(yarn_weight)
         if needle_range is None:
             raise ValueError(f"Yarn weight must be an integer between 0 and 7. Weight given is {yarn_weight}")
         needle_list=list(needle_range)
@@ -202,8 +205,8 @@ class StandardGuage():
         yarn_weight: integer 0-7
         needle_size: Needle size (must be in mms), use NeedleConversion if you have a us or uk size
         """
-        needle_list=list(self._recommended_needle.get(yarn_weight))
-        stitch_list=list(self._stitches_per_4_inches.get(yarn_weight))
+        needle_list=list(RECOMMENDED_NEEDLES_IN_MM.get(yarn_weight))
+        stitch_list=list(STITCHES_PER_4_INCHES.get(yarn_weight))
         if stitch_list is None or needle_list is None:
             raise ValueError("Yarn weight must be a number 0-7")
         #If needle size isn't given, guess based on whether the knitter 
