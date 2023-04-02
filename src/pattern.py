@@ -1,6 +1,6 @@
 from abc import abstractclassmethod
 from typing import NamedTuple
-from conversions import *
+from src.conversions import *
 """
 Basic classes for PatternMeasure's and PatternSections
 """

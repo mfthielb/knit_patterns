@@ -1,4 +1,4 @@
-from pattern import *
+from src.pattern import *
 
 class ToeUpToeML(IncOrDecPatternSection):
     """

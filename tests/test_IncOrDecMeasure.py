@@ -1,6 +1,6 @@
 import sys
 sys.path.append("..")
-from pattern import IncOrDecPatternMeasure
+from src.pattern import IncOrDecPatternMeasure
 import unittest
 
 class TestIncOrDecMeasure(unittest.TestCase):

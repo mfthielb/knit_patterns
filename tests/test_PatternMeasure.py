@@ -1,6 +1,6 @@
 import sys
 sys.path.append("..")
-from pattern import PatternMeasure
+from src.pattern import PatternMeasure
 import unittest
 
 class TestPatternMeasure(unittest.TestCase):
