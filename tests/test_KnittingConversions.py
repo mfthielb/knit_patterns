@@ -1,6 +1,6 @@
 import sys
 sys.path.append('..')
-from KnittingConversions import *
+from src.conversions import *
 import unittest
 from collections import Counter
 from math import floor, ceil
