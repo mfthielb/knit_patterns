@@ -1,4 +1,4 @@
-# knit_patterns
+# Knitting Patterns
 A set of Python Base Classes for Knitting Pattern Calculations
 
 Knitting is a popular hobby, but it's also a practical one. 
